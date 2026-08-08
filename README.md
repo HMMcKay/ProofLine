@@ -128,7 +128,7 @@ Set-ExecutionPolicy -Scope Process Bypass
 - Runs `npm ci` against the committed lockfile.
 - Validates Docker Compose and the GitHub Pages documentation.
 
-`start-local.ps1` builds and starts PostgreSQL, MinIO, the gateway, worker and Caddy, then runs the Vinext web server in the foreground.
+`start-local.ps1` preserves or creates a local receipt-signing identity, safely synchronizes the PostgreSQL role password when an existing volume outlives an `.env` change, builds and starts the media services, then runs the Vinext web server in the foreground. The password repair does not delete or recreate database data.
 
 - Web/control plane: `http://localhost:3000`
 - Media plane: `http://localhost:8080`
@@ -150,6 +150,7 @@ On Windows, Vinext’s POSIX scripts need Git Bash:
 Copy-Item .env.example .env
 npm ci
 $env:npm_config_script_shell = "C:\Program Files\Git\bin\bash.exe"
+./scripts/prepare-local-media-plane.ps1
 docker compose up -d --build --wait
 npm run dev
 ```
@@ -160,6 +161,8 @@ Check container state and logs:
 docker compose ps
 docker compose logs gateway worker
 ```
+
+If PostgreSQL reports `password authentication failed` after `.env` changed, run `./scripts/prepare-local-media-plane.ps1`. PostgreSQL only applies `POSTGRES_PASSWORD` while initializing a new volume; the helper updates the existing local role through the trusted container-local socket and retains the database. Do not delete the volume as a credential-repair shortcut.
 
 ## Android
 

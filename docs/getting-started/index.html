@@ -56,6 +56,7 @@ cd ProofLine</code></pre>
           <pre><code>Copy-Item .env.example .env
 npm ci
 $env:npm_config_script_shell = "C:\Program Files\Git\bin\bash.exe"
+./scripts/prepare-local-media-plane.ps1
 docker compose up -d --build --wait
 npm run dev</code></pre>
           <p>The Compose defaults are development-only. Replace every secret before exposing the service beyond localhost.</p>
@@ -98,6 +99,8 @@ npm run docs:serve</code></pre>
             <dt>Vinext shell errors</dt><dd>On Windows, set <code>npm_config_script_shell</code> to Git Bash. The helper scripts do this automatically.</dd>
             <dt>Port 3000 or 8080 busy</dt><dd>Stop the prior development server or Compose project. Do not run multiple ProofLine stacks against the same persistent volumes.</dd>
             <dt>Android cannot reach host</dt><dd>Use <code>10.0.2.2</code> only in the emulator. A physical phone needs the host’s LAN address and a development network-security policy or HTTPS.</dd>
+            <dt>PostgreSQL password rejected</dt><dd>An existing volume retains the role password from its first initialization even after <code>.env</code> changes. Run <code>./scripts/prepare-local-media-plane.ps1</code> to synchronize the role through the trusted container-local socket without deleting database data.</dd>
+            <dt>Receipt signing key missing</dt><dd>The local startup helper creates and reuses an ignored key under <code>private/</code> when no key is configured. It is plaintext development material, not a production trust identity.</dd>
             <dt>Containers unhealthy</dt><dd>Run <code>docker compose ps</code> and <code>docker compose logs gateway worker</code>. Storage failure intentionally makes ingest fail closed.</dd>
           </dl>
         </section>

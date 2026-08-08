@@ -17,6 +17,8 @@ if ($runningOnWindows -and (Test-Path -LiteralPath $gitBash -PathType Leaf)) {
     $env:npm_config_script_shell = $gitBash
 }
 
+& "$PSScriptRoot\prepare-local-media-plane.ps1"
+
 $composeArguments = @("compose", "up", "-d")
 if (-not $SkipBuild) { $composeArguments += "--build" }
 $composeArguments += "--wait"

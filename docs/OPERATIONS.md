@@ -23,6 +23,8 @@ Invoke-WebRequest https://media.example/metrics
 docker compose logs -f gateway worker
 ```
 
+For local development, `scripts/start-local.ps1` calls `scripts/prepare-local-media-plane.ps1` before starting the full stack. The helper retains a development receipt key under ignored `private/` storage and reconciles the existing PostgreSQL role with the current Compose password through the trusted container-local socket. This addresses password rotation without deleting the persistent volume. Production deployments must instead use their secret manager and an explicit, audited database credential-rotation procedure.
+
 Alert on readiness failure, object-write failure, PostgreSQL saturation, disk/object capacity, certificate expiry, repeated signature failures, outbox backlog, TSA failure, and captures stuck beyond the resume window. Metrics are Prometheus text; logs are structured JSON with request IDs.
 
 ## Offline tombstone

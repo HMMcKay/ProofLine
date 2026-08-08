@@ -38,6 +38,7 @@ if ($IncludeRust) {
 }
 
 if ($IncludeContainers) {
+    Invoke-Checked -Label "Local media-plane credential preflight" -Command { & "$PSScriptRoot\prepare-local-media-plane.ps1" }
     Invoke-Checked -Label "Container stack" -Command { docker compose -f docker-compose.yml -f docker-compose.test.yml up -d --build --wait }
     Invoke-Checked -Label "Media-plane scenarios" -Command { npm run test:media }
 }
