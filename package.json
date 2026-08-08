@@ -12,6 +12,8 @@
     "test": "node --test tests/*.test.mjs",
     "test:built": "npm run build && node --test tests/rendered-html.built.mjs",
     "test:media": "node tests/media-plane.e2e.mjs",
+    "docs:check": "node scripts/validate-docs.mjs",
+    "docs:serve": "node scripts/serve-docs.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate"

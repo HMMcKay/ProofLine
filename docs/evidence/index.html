@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="ProofLine evidence protocol: identity, signed fragment chains, receipts, telemetry, endings, anchors and export bundles."><title>Evidence Protocol — ProofLine Documentation</title><link rel="stylesheet" href="../assets/docs.css"><script src="../assets/docs.js" defer></script></head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header"><div class="header-inner"><a class="brand" href="../"><span class="brand-mark">PL</span><span>ProofLine Docs</span></a><button class="nav-toggle" type="button" data-nav-toggle aria-controls="site-nav" aria-expanded="false">Menu</button><nav class="site-nav" id="site-nav" data-site-nav aria-label="Documentation"><a href="../">Why ProofLine</a><a href="../getting-started/">Start</a><a href="../architecture/">Architecture</a><a href="./" aria-current="page">Evidence</a><a href="../security/">Security</a><a href="../operations/">Operations</a><a href="../validation/">Validation</a></nav></div></header>
+  <main class="page-shell" id="main"><div class="breadcrumb"><a href="../">Documentation</a> / Evidence protocol</div><p class="eyebrow">ProofLine protocol version 2</p><h1 class="page-title">Bind exact received bytes to an inspectable history.</h1><p class="lead">Signed protocol objects use deterministic canonical JSON, ES256 signatures and SHA-256. The exported bundle is designed to be checked without trusting the web presentation.</p>
+    <div class="doc-layout"><article class="doc-main">
+      <section id="identity"><h2>Identity and session authority</h2><dl class="term-grid">
+        <dt><code>strongbox</code></dt><dd>Server-verified Android key attestation reports StrongBox-backed key material.</dd>
+        <dt><code>tee</code></dt><dd>Server-verified attestation reports a trusted execution environment.</dd>
+        <dt><code>software_attested</code></dt><dd>A valid attestation explicitly reports software security.</dd>
+        <dt><code>web_key</code></dt><dd>Browser-generated key, or an explicitly labeled Android development fallback when hardware attestation is not verified.</dd>
+      </dl><p>The public device ID is the base32 SHA-256 fingerprint of the P-256 SubjectPublicKeyInfo. ProofLine does not use IMEI, serial number, MAC address or Android ID as provenance identity.</p><p>A fresh session key is bound to the device identity through a signature covering the server nonce, capture ID, policy, declared streams, start time and session public key.</p></section>
+
+      <section id="fragments"><h2>Fragment chain</h2><pre><code>media_digest = SHA256(exact_fragment_bytes)
+
+chain_digest = SHA256(JCS({
+  protocol_version,
+  capture_id,
+  stream_id,
+  sequence,
+  previous_chain_digest,
+  media_digest,
+  byte_length,
+  pts_start_us,
+  pts_end_us,
+  telemetry_root
+}))</code></pre><p>The gateway verifies the route identity, upload capability, session signature, independently computed media digest, chain predecessor, sequence, PTS policy, BMFF shape, codec, fragment size and quotas. It writes durable object storage before issuing a receipt.</p><div class="warning-box"><strong>First-frame wording:</strong> ProofLine can identify the first encoded frame in the app-signed chain. Android does not provide a universal trusted path from image sensor to application signature.</div></section>
+
+      <section id="receipts"><h2>Durable server receipts</h2><p>A server receipt binds:</p><ul><li>Capture, stream and sequence</li><li>Independent media and chain digests</li><li>Predecessor and exact byte length</li><li>Server receipt time</li><li>Durable object key and object version</li><li>Server public key and ES256 signature</li></ul><p>Identical retries return the original receipt. A conflicting duplicate is rejected and remains visible in structured logs and audit evidence.</p><div class="source-note">A receipt means “these exact bytes were durably received by this server.” It does not mean “the sensor produced no later frame.”</div></section>
+
+      <section id="media"><h2>Video and audio</h2><p>The production target is ISO BMFF/CMAF with H.264/AVC and AAC-LC in two-second fragments. Hashing the exact fragment bytes binds every track present in that object. Reports also expose track-oriented roots so audio, video and telemetry results can be discussed separately.</p><p>The current Android client records independently playable, signed two-second MP4 assets through CameraX. The committed Media3/CMAF fixture validates the intended fragmented container path separately. This limitation is reported, not relabeled as live C2PA.</p><p>Microphone audio is captured once and linked as shared evidence when front and rear camera streams are present. Player mute state is presentation, not evidence.</p></section>
+
+      <section id="telemetry"><h2>Telemetry</h2><div class="table-wrap"><table class="status-table"><thead><tr><th>Currently collected by Android</th><th>Interpretation</th><th>Limit</th></tr></thead><tbody>
+        <tr><td>Accelerometer, gyroscope, rotation vector</td><td>Motion and orientation can be compared with visual camera movement.</td><td>Sensors can be spoofed or have incompatible timing.</td></tr>
+        <tr><td>Barometric pressure</td><td>Ambient pattern may corroborate elevation/weather context.</td><td>No weather-correlation adapter is implemented yet.</td></tr>
+        <tr><td>Sensor timestamp, elapsed realtime, wall time</td><td>Provides ordering and measured clock relationships.</td><td>Wall time is not objective clock truth.</td></tr>
+        <tr><td>Location and accuracy</td><td>Reports where the device said it was at capture start.</td><td>Current collection is a point reading, not continuous travel history.</td></tr>
+        <tr><td>Lifecycle, thermal status, battery</td><td>Provides device-state context around failures and endings.</td><td>Physical thermal/process-loss behavior remains unverified.</td></tr>
+      </tbody></table></div><p>Camera exposure, focus, zoom, torch and complete network-state telemetry are part of the protocol direction but are not all emitted by the current Android collector. The evidence report must distinguish missing data from a passing check.</p></section>
+
+      <section id="endings"><h2>Endings, gaps and recovery</h2><div class="table-wrap"><table class="status-table"><thead><tr><th>Completeness</th><th>Meaning</th></tr></thead><tbody>
+        <tr><td><code>complete_with_signed_end</code></td><td>A valid device-signed end manifest covers every declared track, count and final digest.</td></tr>
+        <tr><td><code>complete_as_server_received</code></td><td>The report covers the highest contiguous prefix accepted before the resume window expired.</td></tr>
+        <tr><td><code>gaps_detected</code></td><td>Counts, predecessors, stream declarations or final digests do not reconcile.</td></tr>
+        <tr><td><code>pending</code></td><td>The capture is still initializing, live, stalled or awaiting finalization.</td></tr>
+      </tbody></table></div><p>End reasons are <code>user_stop</code>, <code>duration_limit</code>, <code>permission_revoked</code>, <code>thermal_shutdown</code> and <code>app_error</code>. A signature can show that the device key authorized the manifest; it cannot prove who pressed the button or whether they acted voluntarily.</p><p>Late valid fragments after interruption become recovery supplements. They never replace the original interruption assertion or prior receipts.</p></section>
+
+      <section id="anchors"><h2>Receipt anchors and time</h2><p>The worker builds deterministic Merkle roots across newly accepted receipts in 60-second batches and signs the leaf set. When configured, it sends the root to an RFC 3161 timestamp authority and preserves the raw response.</p><p>A server-signed Merkle root is a compact commitment, not an independent time witness. A TSA response becomes independent corroboration only after its signature, policy and certificate chain are validated. TSA failure remains a warning; already durable evidence is not rejected.</p></section>
+
+      <section id="c2pa"><h2>C2PA</h2><p>The repository pins official <code>c2patool</code> 0.26.60 for a synthetic AVC/AAC CMAF fixture. Asset binding validates with trust checking disabled, and strict checking correctly rejects the untrusted development credential.</p><p>Current Android and PWA output does not receive a live C2PA or finalized-asset C2PA claim. Evidence reports state <code>unsupported_for_current_capture_format</code> and <code>not_generated</code>. Proprietary sidecars are never called C2PA-conformant.</p><p><a href="https://spec.c2pa.org/specifications/specifications/2.4/specs/C2PA_Specification.html">C2PA 2.4 specification →</a></p></section>
+
+      <section id="bundle"><h2>Evidence bundle</h2><p>The self-contained bundle includes canonical JSON, detached JSON/PDF signatures, report PDF, server public key, raw accepted fragments, fragment envelopes, receipts, telemetry batches, anchors, device end manifest, audit events, recovery supplements, C2PA status and any tombstone action.</p><div class="success-box"><strong>Independent check:</strong> recompute fragment bytes, chain inputs, signatures, receipt-tree roots and report hashes from exported material. Do not treat the UI’s green state as proof by itself.</div></section>
+    </article><aside class="toc" aria-label="On this page"><strong>On this page</strong><a href="#identity">Identity</a><a href="#fragments">Fragment chain</a><a href="#receipts">Receipts</a><a href="#media">Media/audio</a><a href="#telemetry">Telemetry</a><a href="#endings">Endings</a><a href="#anchors">Anchors</a><a href="#c2pa">C2PA</a><a href="#bundle">Bundle</a></aside></div>
+  </main><footer class="site-footer"><div class="site-footer-inner"><div><strong>ProofLine evidence protocol</strong><div class="fine-print">Cryptographic claims stay narrower than scene truth.</div></div><div class="footer-links"><a href="../architecture/">Architecture</a><a href="../security/">Next: Security</a><a href="../project-overview/">Overview</a></div></div></footer>
+</body></html>
+

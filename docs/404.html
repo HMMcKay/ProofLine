@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex"><title>Page not found — ProofLine Documentation</title>
+  <style>
+    :root { color-scheme: light dark; font-family: system-ui, sans-serif; }
+    body { margin: 0; background: light-dark(#f5f6f8, #0c1016); color: light-dark(#18202c, #edf2f8); }
+    main { width: min(46rem, calc(100% - 2rem)); margin: 10vh auto; }
+    .eyebrow { color: light-dark(#075b9d, #68b8f4); font-size: .8rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+    h1 { max-width: 12ch; font-size: clamp(2.5rem, 8vw, 5rem); line-height: 1.05; }
+    p { max-width: 60ch; line-height: 1.6; }
+    a { display: inline-block; margin-top: 1rem; padding: .7rem 1rem; border-radius: .5rem; background: light-dark(#075b9d, #68b8f4); color: light-dark(#fff, #07111b); font-weight: 750; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <main class="page-shell" id="main">
+    <p class="eyebrow">404 · ProofLine documentation</p>
+    <h1 class="page-title">That evidence route does not exist.</h1>
+    <p>The documentation page may have moved, or the URL may contain an invalid capture of the path.</p>
+    <a id="documentation-home" href="./">Return to documentation home</a>
+  </main>
+  <script>
+    const link = document.getElementById('documentation-home');
+    const segments = window.location.pathname.split('/').filter(Boolean);
+    link.href = window.location.hostname.endsWith('github.io') && segments.length ? `/${segments[0]}/` : '/';
+  </script>
+</body>
+</html>

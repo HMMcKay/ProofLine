@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Deploy, secure, observe, back up and restore the ProofLine media plane and public control plane."><title>Operations — ProofLine Documentation</title><link rel="stylesheet" href="../assets/docs.css"><script src="../assets/docs.js" defer></script></head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header"><div class="header-inner"><a class="brand" href="../"><span class="brand-mark">PL</span><span>ProofLine Docs</span></a><button class="nav-toggle" type="button" data-nav-toggle aria-controls="site-nav" aria-expanded="false">Menu</button><nav class="site-nav" id="site-nav" data-site-nav aria-label="Documentation"><a href="../">Why ProofLine</a><a href="../getting-started/">Start</a><a href="../architecture/">Architecture</a><a href="../evidence/">Evidence</a><a href="../security/">Security</a><a href="./" aria-current="page">Operations</a><a href="../validation/">Validation</a></nav></div></header>
+  <main class="page-shell" id="main"><div class="breadcrumb"><a href="../">Documentation</a> / Operations</div><p class="eyebrow">Deployment and custody</p><h1 class="page-title">Operate the media plane as evidence infrastructure.</h1><p class="lead">The initial production topology is one HTTPS VPS with isolated internal storage services. Public web delivery stays in Sites; continuous ingest and finalization stay in containers.</p>
+    <div class="doc-layout"><article class="doc-main">
+      <section id="topology"><h2>Production topology</h2><ul><li>Caddy terminates TLS and is the only trusted reverse proxy.</li><li>The Rust gateway receives uploads, issues receipts, serves live media/evidence and exposes health/metrics.</li><li>The Rust worker owns finalization, state expiry, receipt anchors, reports and outbox delivery.</li><li>PostgreSQL and MinIO/S3 are reachable only on the internal Docker network.</li><li>Sites binds to <code>MEDIA_CONTROL_URL</code>, <code>MEDIA_PUBLIC_URL</code> and a matching internal secret.</li></ul><pre><code>docker compose config
+docker compose up -d --build --wait
+Invoke-RestMethod https://media.example/healthz
+Invoke-RestMethod https://media.example/readyz
+Invoke-WebRequest https://media.example/metrics</code></pre></section>
+
+      <section id="secrets"><h2>Keys and secrets</h2><div class="grid-2">
+        <div class="card"><h3>Server receipt key</h3><p>Mount an encrypted PKCS#8 key read-only or inject it from the host secret manager. Publish and retain public-key history.</p></div>
+        <div class="card"><h3>Offline admin key</h3><p>Generate and store off-server. Configure only its public SPKI on the gateway.</p></div>
+        <div class="card"><h3>C2PA credential</h3><p>The committed certificate is development-only and untrusted. Production needs an operator certificate and chain accepted by the intended trust list.</p></div>
+        <div class="card"><h3>TLS and internal secret</h3><p>Use real ACME/TLS, rotate internal HMAC material, and restrict internal routes at the network layer as well as application layer.</p></div>
+      </div><div class="danger-box"><strong>Never store private signing keys in D1 or PostgreSQL.</strong> The documented upgrade path is an HSM/KMS subprocess signer or PKCS#11.</div></section>
+
+      <section id="proxy"><h2>TLS and proxy policy</h2><p>Replace the development <code>:80</code> Caddy listener with the media hostname and operator email, then expose only ports 80 and 443. Do not publish PostgreSQL, MinIO API or MinIO console ports.</p><p>Honor forwarding headers only when the connection comes from the configured Caddy proxy. Client-supplied forwarding headers from any other source are untrusted.</p></section>
+
+      <section id="observe"><h2>Observe and alert</h2><div class="table-wrap"><table class="status-table"><thead><tr><th>Signal</th><th>Why it matters</th></tr></thead><tbody>
+        <tr><td>Readiness failure</td><td>Ingest should not accept work without required storage/database dependencies.</td></tr>
+        <tr><td>Object-write failure</td><td>No receipt may be issued before durable storage succeeds.</td></tr>
+        <tr><td>Outbox backlog</td><td>Public D1 projection may be stale even while authoritative evidence is safe.</td></tr>
+        <tr><td>Repeated signature rejection</td><td>May indicate attack, client corruption or incompatible protocol code.</td></tr>
+        <tr><td>Disk/object capacity</td><td>Evidence availability requires proactive headroom.</td></tr>
+        <tr><td>Certificate/TSA failure</td><td>Trust or independent-time corroboration is degraded and must remain visible.</td></tr>
+        <tr><td>Capture beyond resume window</td><td>Worker/job failure may be preventing interruption finalization.</td></tr>
+      </tbody></table></div><p>Logs are structured JSON with request IDs. Metrics use Prometheus text format.</p></section>
+
+      <section id="tombstone"><h2>Offline tombstone workflow</h2><pre><code>docker run --rm \
+  -v "C:\encrypted\proofline-keys:/keys:ro" \
+  --network host \
+  --entrypoint proofline-admin proofline-gateway \
+  tombstone \
+  --gateway https://media.example \
+  --capture cap_... \
+  --reason "Published safety policy reason" \
+  --private-key /keys/admin-private-key.txt</code></pre><p>Confirm the exact capture and public reason offline. The action hides media delivery; it does not erase the report or receipt history.</p></section>
+
+      <section id="backup"><h2>Backup and restore</h2><pre><code>./scripts/backup.ps1 -OutputDirectory D:\proofline-backups
+
+./scripts/restore.ps1 \
+  -BackupDirectory D:\proofline-backups\proofline-YYYYMMDD-HHMMSS \
+  -ConfirmRestore RESTORE-PROOFLINE</code></pre><p>Back up PostgreSQL, media objects, receipt/C2PA/TLS keys and audit events. Keep an encrypted off-site copy. Test restore on a disconnected clone; restoration stops ingest and replaces the exact MinIO data target.</p></section>
+
+      <section id="release"><h2>Release boundaries</h2><div class="warning-box"><strong>Sites:</strong> the source remains bound to the existing ProofLine project. Preserve the private deployment as rollback. Replacing it and enabling anonymous public capture requires explicit confirmation immediately before the switch.</div><div class="success-box"><strong>GitHub Pages:</strong> the documentation workflow publishes only <code>docs/</code>. It does not deploy or change the ProofLine application, Sites access, VPS services or anonymous capture policy.</div></section>
+    </article><aside class="toc" aria-label="On this page"><strong>On this page</strong><a href="#topology">Topology</a><a href="#secrets">Secrets</a><a href="#proxy">TLS/proxy</a><a href="#observe">Observability</a><a href="#tombstone">Tombstone</a><a href="#backup">Backup</a><a href="#release">Release boundary</a></aside></div>
+  </main><footer class="site-footer"><div class="site-footer-inner"><div><strong>ProofLine operations</strong><div class="fine-print">Custody failures must be observable, not hidden.</div></div><div class="footer-links"><a href="../security/">Security</a><a href="../validation/">Next: Validation</a><a href="../getting-started/">Local setup</a></div></div></footer>
+</body></html>
+

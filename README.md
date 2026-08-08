@@ -1,19 +1,59 @@
 # ProofLine v2
 
-ProofLine is a public, high-assurance video-provenance system. It uploads signed media fragments while a capture is happening, preserves server receipts and telemetry, and makes deliberate endings visibly different from interrupted recordings.
+ProofLine is a public, high-assurance video-provenance system designed to preserve evidence while capture is still happening. It sends signed, short media fragments off-device, stores them durably, returns signed receipts, and makes deliberate endings visibly different from interrupted recordings.
 
-It does **not** prove that a depicted event is objectively true, guarantee admissibility, or make a compromised phone trustworthy. C2PA and the ProofLine chain establish media bindings and signed provenance assertions; evidentiary weight still depends on device state, custody, operator keys, and jurisdiction.
+It does **not** prove that a depicted event is objectively true, guarantee legal admissibility, or make a compromised phone trustworthy. C2PA and the ProofLine chain bind media to provenance assertions; evidentiary weight still depends on device state, key custody, server custody, independent corroboration, and jurisdiction.
 
-## What is implemented
+## Documentation
 
-- Anonymous public Sites/Vinext control plane with live-first browsing, permanent capture and device pages, evidence dashboards, PWA capture, D1 projections, location-delay handling, and no viewer accounts.
-- Rust gateway with signed two-second fragment envelopes, independent byte hashing, durable object writes, signed receipts, continuity enforcement, telemetry batches, SSE status, HLS playlists, recovery supplements, quotas, tombstones, and immutable audit events.
-- Rust worker with stalled/interrupted state transitions, PostgreSQL jobs/outbox behavior, deterministic receipt Merkle anchors, optional RFC 3161 requests, and signed JSON/PDF/ZIP evidence artifacts.
-- Kotlin/Compose Android 11+ client with one-time public warning, foreground capture service, Android Keystore identity/session keys, CameraX single/attempted concurrent capture, microphone, location and motion telemetry, ordered quality fallback, encrypted bounded queue, receipt handling, and 60-minute cutoff.
-- Reproducible official `c2patool` 0.26.60 fragmented-BMFF compatibility fixture. The committed fixture passes video/audio asset-binding validation with trust checking disabled and correctly fails strict trust because it uses an untrusted development credential.
-- Docker Compose for PostgreSQL, MinIO, Caddy, gateway, and worker; migrations, health checks, persistent volumes, CI, backup/restore tooling, and an SBOM workflow.
+The standalone GitHub Pages documentation includes:
 
-## Repository
+- A researched explanation of the problem with cited DOJ, court and civil-settlement examples.
+- Complete architecture, evidence-protocol, security, operations and validation guides.
+- A responsive interactive “ProofLine v2 · project overview” covering methodology, evidence and readiness.
+- A source-classification page that distinguishes guilty pleas, civil allegations and engineering inferences.
+
+Start with [the documentation home](docs/index.html). To view it as the deployed site, enable **Settings → Pages → GitHub Actions** after pushing this repository. The included workflow publishes only `docs/`; it does not deploy the application or change the existing private Sites project.
+
+Preview the documentation locally:
+
+```powershell
+npm run docs:check
+npm run docs:serve
+```
+
+Then open `http://127.0.0.1:4173/`.
+
+## Why ProofLine exists
+
+A normal phone recording is a single point of failure. The person holding the device—or anyone who seizes it—can stop recording, delete the file, destroy the phone, or prevent a local-only video from reaching an independent custodian.
+
+ProofLine changes the storage boundary:
+
+```mermaid
+flowchart LR
+    D["Android or PWA capture"] -->|"signed ~2 second fragments"| G["Rust media gateway"]
+    G -->|"durable write"| O[("MinIO / S3 objects")]
+    G -->|"signed receipt after storage"| D
+    G --> P[("PostgreSQL evidence index")]
+    W["Finalizer worker"] --> P
+    W --> O
+    W -->|"signed public projection"| S["Sites / D1 public ledger"]
+    V["Independent viewer"] --> S
+    V -->|"live media and evidence bundle"| G
+```
+
+Once a valid receipt exists, deleting the phone’s local file cannot delete the server’s accepted bytes or rewrite prior receipt history. Unacknowledged fragments that exist only on a destroyed device can still be lost, and ProofLine says so explicitly.
+
+## Implemented surfaces
+
+- **Public web/control plane:** Vinext, React, TypeScript, Sites APIs and D1 projection; live-first browsing, capture/device permalinks, evidence dashboard, PWA capture, delayed exact-location release and no viewer accounts.
+- **Native Android app:** Android 11+, Kotlin, Jetpack Compose, CameraX, foreground capture service, Android Keystore identity, session signing, rear-camera default, concurrent-camera attempt, microphone, location/motion telemetry, encrypted bounded queue and 60-minute cutoff.
+- **Rust media plane:** capability-bound ingest, independent hashing, durable writes, signed receipts, sequence enforcement, telemetry, HLS, SSE, state transitions, recovery supplements, reports, evidence ZIPs, quotas, metrics and offline-signed tombstones.
+- **Evidence protocol:** RFC 8785-style canonical JSON, P-256/ES256 signatures, SHA-256 fragment chains, server receipts, receipt Merkle anchors, optional RFC 3161 timestamps and committed cross-language vectors.
+- **Operations:** Docker Compose, Caddy, PostgreSQL, MinIO/S3, migrations, health/readiness checks, structured logs, Prometheus metrics, backup/restore tools, release helpers and a CycloneDX SBOM workflow.
+
+Repository layout:
 
 ```text
 app, components, lib, worker/    Sites/Vinext web and D1 worker
@@ -22,70 +62,206 @@ crates/proofline-protocol/       Canonical protocol and crypto primitives
 services/media/                  Gateway, worker, report builder, admin CLI
 protocol/                        JSON Schema and cross-language vectors
 examples/c2pa/                   Executed C2PA/CMAF compatibility fixture
-docs/                            Architecture, protocol, threat model, operations
+docs/                            GitHub Pages site plus source documentation
 openapi/                         Versioned public HTTP contract
-scripts/                         Backup, restore, key, C2PA, and SBOM tools
+scripts/                         Setup, verification, backup, restore and build tools
 ```
 
-## Local development
+## Capture outcomes
 
-Requirements: Node.js 22+, Docker Desktop, JDK 17, Android SDK 36, and FFmpeg. On Windows, Vinext's POSIX scripts need Git Bash:
+```mermaid
+stateDiagram-v2
+    [*] --> initializing
+    initializing --> live: first accepted fragment
+    live --> stalled: 30 seconds without a fragment
+    stalled --> live: valid continuation within 15 minutes
+    live --> sealed: valid device-signed end
+    stalled --> sealed: valid device-signed end
+    initializing --> interrupted: resume window expires
+    live --> interrupted: resume window expires
+    stalled --> interrupted: resume window expires
+    interrupted --> interrupted: signed recovery supplement
+    sealed --> tombstoned: offline-signed action
+    interrupted --> tombstoned: offline-signed action
+```
+
+- `sealed` + `complete_with_signed_end`: accepted declared tracks reconcile with a valid device-signed end manifest.
+- `interrupted` + `complete_as_server_received`: the displayed end is the highest contiguous prefix accepted by the server.
+- `gaps_detected`: stream counts, predecessors, signatures or final digests do not reconcile.
+- `tombstoned`: public media delivery is hidden while hashes, receipts, signed action and audit history remain available.
+
+A server receipt means “durably received by this server,” not “the device sensor produced no later frame.”
+
+## Clone and prerequisites
+
+This checkout does not currently have a Git remote configured, so substitute the repository URL after publishing it:
 
 ```powershell
-npm ci
-$env:npm_config_script_shell = "C:\Program Files\Git\bin\bash.exe"
-npm run dev
-docker compose up -d --build
+git clone <repository-url> ProofLine
+cd ProofLine
 ```
 
-The web app is at `http://localhost:3000`; the media plane is at `http://localhost:8080`. Local Compose defaults are intentionally development-only. Copy `.env.example` and replace every secret before exposing the service.
+Required for the normal local stack:
 
-Android debug build:
+- Git and Git Bash on Windows
+- Node.js 22.13 or newer
+- Docker Desktop with Compose v2
+
+Additional toolchains:
+
+- JDK 17 and Android SDK 36/build tools 36.0.0 for Android
+- Rust 1.88 for host-native Rust checks
+- FFmpeg for the C2PA/CMAF compatibility spike
+
+## Fast local setup on Windows
+
+```powershell
+Set-ExecutionPolicy -Scope Process Bypass
+./scripts/setup-local.ps1
+./scripts/start-local.ps1
+```
+
+`setup-local.ps1`:
+
+- Checks Git, Node and Docker.
+- Preserves an existing `.env` or creates one from `.env.example`.
+- Runs `npm ci` against the committed lockfile.
+- Validates Docker Compose and the GitHub Pages documentation.
+
+`start-local.ps1` builds and starts PostgreSQL, MinIO, the gateway, worker and Caddy, then runs the Vinext web server in the foreground.
+
+- Web/control plane: `http://localhost:3000`
+- Media plane: `http://localhost:8080`
+- Media health: `http://localhost:8080/healthz`
+
+Press `Ctrl+C` to stop the foreground web server. Stop containers without deleting persistent volumes:
+
+```powershell
+./scripts/stop-local.ps1
+```
+
+Local Compose secrets are intentionally development-only. Replace every value before exposing a service beyond localhost.
+
+## Manual local setup
+
+On Windows, Vinext’s POSIX scripts need Git Bash:
+
+```powershell
+Copy-Item .env.example .env
+npm ci
+$env:npm_config_script_shell = "C:\Program Files\Git\bin\bash.exe"
+docker compose up -d --build --wait
+npm run dev
+```
+
+Check container state and logs:
+
+```powershell
+docker compose ps
+docker compose logs gateway worker
+```
+
+## Android
+
+The debug application defaults to `http://10.0.2.2:3000`, the Android emulator alias for the development host.
 
 ```powershell
 cd android
-.\gradlew.bat testDebugUnitTest lintDebug assembleDebug
+./gradlew.bat testDebugUnitTest lintDebug assembleDebug
 ```
 
-To create the deliverable debug APK plus development-signed release APK/AAB and run the clean-payload reproducibility check:
+Override the control-plane URL for a physical-device or HTTPS build:
 
 ```powershell
-.\scripts\build-android-artifacts.ps1
+./gradlew.bat assembleDebug -PprooflineControlUrl=https://proofline.example
 ```
 
-Release signing is environment-provided and never committed:
+Generate the deliverable debug APK, development-signed release APK/AAB and clean-payload reproducibility report:
+
+```powershell
+cd ..
+./scripts/build-android-artifacts.ps1
+```
+
+Production release signing is environment-provided and never committed:
 
 ```powershell
 $env:PROOFLINE_KEYSTORE_PATH = "C:\secure\proofline-release.jks"
 $env:PROOFLINE_KEYSTORE_PASSWORD = "..."
 $env:PROOFLINE_KEY_ALIAS = "proofline"
 $env:PROOFLINE_KEY_PASSWORD = "..."
-.\gradlew.bat assembleRelease bundleRelease
+cd android
+./gradlew.bat assembleRelease bundleRelease
 ```
+
+The committed/default development signing identity is not a production trust identity.
 
 ## Validation
 
+Run the normal web, protocol, documentation and production-build checks:
+
 ```powershell
+./scripts/verify-local.ps1
+```
+
+Run every locally automated surface when all optional toolchains are installed:
+
+```powershell
+./scripts/verify-local.ps1 `
+  -IncludeRust `
+  -IncludeContainers `
+  -IncludeAndroid `
+  -IncludeC2pa
+```
+
+Equivalent individual commands:
+
+```powershell
+npm run docs:check
 npm run lint
 npm run typecheck
 npm test
 npm run test:built
-docker compose -f docker-compose.yml -f docker-compose.test.yml up -d --build
-npm run test:media
-.\scripts\c2pa-spike.ps1
-```
 
-Rust validation runs in the pinned build image or on Rust 1.88:
-
-```powershell
 cargo fmt --all -- --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 cargo build --workspace --release
+
+docker compose -f docker-compose.yml -f docker-compose.test.yml up -d --build --wait
+npm run test:media
+
+./scripts/c2pa-spike.ps1
 ```
 
-See [validation](docs/VALIDATION.md), [operations](docs/OPERATIONS.md), [protocol](docs/PROTOCOL.md), [architecture](docs/ARCHITECTURE.md), and [threat model](docs/THREAT_MODEL.md). `openapi/proofline-v1.yaml` is the HTTP contract.
+See [the validation guide](docs/validation/index.html) and [the detailed validation record](docs/VALIDATION.md). Passing fixtures, containers or an emulator is not a substitute for physical-device testing.
 
-## Deployment boundary
+## GitHub Pages documentation
 
-The Sites source is bound to the existing ProofLine project in `.openai/hosting.json`. Do not create a duplicate project. The prior private deployment remains the rollback version until this source is validated. Changing Sites access to public and enabling anonymous production capture is a separate, explicit confirmation step.
+The repository includes `.github/workflows/pages.yml`. It validates and publishes only the `docs/` directory using GitHub’s Pages artifact workflow.
+
+After adding a Git remote and pushing:
+
+1. Open the repository’s **Settings → Pages**.
+2. Select **GitHub Actions** as the source.
+3. Run the **ProofLine documentation** workflow or push a change under `docs/`.
+4. Use the deployment URL shown in the workflow’s `github-pages` environment.
+
+This documentation deployment is independent of the ProofLine Sites application and VPS media plane.
+
+## Production boundary
+
+The Sites source remains bound to the existing ProofLine project in `.openai/hosting.json`. Do not create a duplicate Sites project. Preserve the current private deployment as rollback until the new source, media plane, physical-device behavior and production trust configuration are validated.
+
+Changing Sites access to public and enabling anonymous production capture requires explicit confirmation immediately before that switch. Publishing the GitHub Pages documentation does **not** grant that confirmation.
+
+## Known open gates
+
+- Physical StrongBox/TEE attestation, microphone, GNSS, barometer, motion/camera timebases, thermal behavior, process death and concurrent cameras.
+- Continuous Media3-authored CMAF from Android; the current app emits signed, independently playable two-second MP4 assets.
+- Live/final C2PA authoring for current capture output and a separately installed official validation implementation.
+- Preview sprite generation and hover/stylus scrubbing.
+- Weather correlation adapters, production TSA/C2PA trust, KMS/HSM/PKCS#11 and hostile-server independent witnesses.
+- VPS DNS/TLS/deployment and public anonymous production capture.
+
+Read [the threat model](docs/THREAT_MODEL.md), [protocol](docs/PROTOCOL.md), [architecture](docs/ARCHITECTURE.md), [operations](docs/OPERATIONS.md), and [OpenAPI contract](openapi/proofline-v1.yaml) before production use.

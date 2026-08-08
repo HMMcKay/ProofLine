@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Clone, configure, build and run ProofLine locally on Windows or another development host.">
+  <title>Getting Started — ProofLine Documentation</title>
+  <link rel="stylesheet" href="../assets/docs.css"><script src="../assets/docs.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header"><div class="header-inner"><a class="brand" href="../"><span class="brand-mark">PL</span><span>ProofLine Docs</span></a><button class="nav-toggle" type="button" data-nav-toggle aria-controls="site-nav" aria-expanded="false">Menu</button><nav class="site-nav" id="site-nav" data-site-nav aria-label="Documentation"><a href="../">Why ProofLine</a><a href="./" aria-current="page">Start</a><a href="../architecture/">Architecture</a><a href="../evidence/">Evidence</a><a href="../security/">Security</a><a href="../operations/">Operations</a><a href="../validation/">Validation</a></nav></div></header>
+  <main class="page-shell" id="main">
+    <div class="breadcrumb"><a href="../">Documentation</a> / Getting started</div>
+    <p class="eyebrow">Developer guide</p><h1 class="page-title">Build and run ProofLine locally.</h1>
+    <p class="lead">The repository contains three working surfaces: a Vinext/Sites public control plane, a Rust media plane, and a native Android client. Start the web and media planes first; then point the Android app at the control-plane URL.</p>
+    <div class="doc-layout">
+      <article class="doc-main">
+        <section id="prerequisites">
+          <h2>Prerequisites</h2>
+          <div class="table-wrap"><table class="status-table"><thead><tr><th>Tool</th><th>Required for</th><th>Version</th></tr></thead><tbody>
+            <tr><td>Git</td><td>Clone and source control</td><td>Current stable</td></tr>
+            <tr><td>Node.js</td><td>Web app, protocol tests and docs checks</td><td>22.13 or newer</td></tr>
+            <tr><td>Git Bash</td><td>Vinext’s POSIX-style npm scripts on Windows</td><td>Installed with Git for Windows</td></tr>
+            <tr><td>Docker Desktop</td><td>PostgreSQL, MinIO, Caddy, Rust gateway and worker</td><td>Current stable with Compose v2</td></tr>
+            <tr><td>JDK</td><td>Android Gradle build</td><td>17</td></tr>
+            <tr><td>Android SDK</td><td>Android APK/AAB</td><td>Platform 36, build tools 36.0.0</td></tr>
+            <tr><td>Rust</td><td>Native gateway development without Docker</td><td>1.88</td></tr>
+            <tr><td>FFmpeg</td><td>C2PA/CMAF compatibility spike</td><td>Recent stable</td></tr>
+          </tbody></table></div>
+          <div class="source-note">The scripted Windows path checks required tools and preserves an existing <code>.env</code>. It will not overwrite secrets or remove Docker volumes.</div>
+        </section>
+
+        <section id="clone">
+          <h2>Clone</h2>
+          <pre><code>git clone &lt;repository-url&gt; ProofLine
+cd ProofLine</code></pre>
+          <p>This checkout currently has no Git remote configured, so the documentation intentionally uses a placeholder rather than inventing an owner URL.</p>
+        </section>
+
+        <section id="scripted-start">
+          <h2>Fast path on Windows</h2>
+          <pre><code>Set-ExecutionPolicy -Scope Process Bypass
+./scripts/setup-local.ps1
+./scripts/start-local.ps1</code></pre>
+          <p><code>setup-local.ps1</code> checks the host, copies <code>.env.example</code> only when <code>.env</code> is missing, installs pinned Node dependencies, and validates the Docker Compose model. <code>start-local.ps1</code> starts the container media plane, then keeps the Vinext development server in the foreground.</p>
+          <div class="grid-2">
+            <div class="card"><strong>Public/control plane</strong><p><a href="http://localhost:3000/">http://localhost:3000</a></p></div>
+            <div class="card"><strong>Media plane through Caddy</strong><p><a href="http://localhost:8080/healthz">http://localhost:8080</a></p></div>
+          </div>
+          <p>Press <kbd>Ctrl+C</kbd> to stop the foreground web server. Stop containers separately:</p>
+          <pre><code>./scripts/stop-local.ps1</code></pre>
+        </section>
+
+        <section id="manual-start">
+          <h2>Manual start</h2>
+          <pre><code>Copy-Item .env.example .env
+npm ci
+$env:npm_config_script_shell = "C:\Program Files\Git\bin\bash.exe"
+docker compose up -d --build --wait
+npm run dev</code></pre>
+          <p>The Compose defaults are development-only. Replace every secret before exposing the service beyond localhost.</p>
+        </section>
+
+        <section id="android">
+          <h2>Android client</h2>
+          <p>The debug app defaults to <code>http://10.0.2.2:3000</code>, which maps an Android emulator to the host. For a physical phone, supply a control-plane URL reachable over the local network or HTTPS.</p>
+          <pre><code>cd android
+./gradlew.bat testDebugUnitTest lintDebug assembleDebug</code></pre>
+          <p>Override the endpoint for a build:</p>
+          <pre><code>./gradlew.bat assembleDebug -PprooflineControlUrl=https://proofline.example</code></pre>
+          <p>Create the full deliverable set—including development-signed release outputs and the clean-payload reproducibility check—from the repository root:</p>
+          <pre><code>./scripts/build-android-artifacts.ps1</code></pre>
+          <div class="warning-box"><strong>Release trust:</strong> development artifacts use an ephemeral self-signed key. Production signing requires environment-provided keystore values and a protected release process.</div>
+        </section>
+
+        <section id="docs">
+          <h2>Documentation site</h2>
+          <pre><code>npm run docs:check
+npm run docs:serve</code></pre>
+          <p>The local documentation server prints its URL and serves the same <code>docs/</code> directory deployed by GitHub Pages. Stop it with <kbd>Ctrl+C</kbd>.</p>
+        </section>
+
+        <section id="verify">
+          <h2>Verification shortcuts</h2>
+          <pre><code>./scripts/verify-local.ps1
+
+# Include Rust and the slower container scenario
+./scripts/verify-local.ps1 -IncludeRust -IncludeContainers
+
+# Include every locally automated surface
+./scripts/verify-local.ps1 -IncludeRust -IncludeContainers -IncludeAndroid -IncludeC2pa</code></pre>
+          <p>See the <a href="../validation/">validation record</a> before treating a local pass as physical-device or production evidence.</p>
+        </section>
+
+        <section id="troubleshooting">
+          <h2>Common issues</h2>
+          <dl class="term-grid">
+            <dt>Vinext shell errors</dt><dd>On Windows, set <code>npm_config_script_shell</code> to Git Bash. The helper scripts do this automatically.</dd>
+            <dt>Port 3000 or 8080 busy</dt><dd>Stop the prior development server or Compose project. Do not run multiple ProofLine stacks against the same persistent volumes.</dd>
+            <dt>Android cannot reach host</dt><dd>Use <code>10.0.2.2</code> only in the emulator. A physical phone needs the host’s LAN address and a development network-security policy or HTTPS.</dd>
+            <dt>Containers unhealthy</dt><dd>Run <code>docker compose ps</code> and <code>docker compose logs gateway worker</code>. Storage failure intentionally makes ingest fail closed.</dd>
+          </dl>
+        </section>
+      </article>
+      <aside class="toc" aria-label="On this page"><strong>On this page</strong><a href="#prerequisites">Prerequisites</a><a href="#clone">Clone</a><a href="#scripted-start">Fast path</a><a href="#manual-start">Manual start</a><a href="#android">Android</a><a href="#docs">Documentation</a><a href="#verify">Verification</a><a href="#troubleshooting">Troubleshooting</a></aside>
+    </div>
+  </main>
+  <footer class="site-footer"><div class="site-footer-inner"><div><strong>ProofLine v2 documentation</strong><div class="fine-print">Build locally before changing any public access.</div></div><div class="footer-links"><a href="../">Home</a><a href="../architecture/">Next: Architecture</a><a href="../project-overview/">Interactive overview</a></div></div></footer>
+</body>
+</html>

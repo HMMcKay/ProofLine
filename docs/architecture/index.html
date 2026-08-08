@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="ProofLine architecture, trust boundaries, state machine and API surfaces."><title>Architecture — ProofLine Documentation</title><link rel="stylesheet" href="../assets/docs.css"><script src="../assets/docs.js" defer></script></head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header"><div class="header-inner"><a class="brand" href="../"><span class="brand-mark">PL</span><span>ProofLine Docs</span></a><button class="nav-toggle" type="button" data-nav-toggle aria-controls="site-nav" aria-expanded="false">Menu</button><nav class="site-nav" id="site-nav" data-site-nav aria-label="Documentation"><a href="../">Why ProofLine</a><a href="../getting-started/">Start</a><a href="./" aria-current="page">Architecture</a><a href="../evidence/">Evidence</a><a href="../security/">Security</a><a href="../operations/">Operations</a><a href="../validation/">Validation</a></nav></div></header>
+  <main class="page-shell" id="main"><div class="breadcrumb"><a href="../">Documentation</a> / Architecture</div><p class="eyebrow">System design</p><h1 class="page-title">Separate public control from continuous media work.</h1><p class="lead">Sites serves the public web and short control-plane APIs. A dedicated HTTPS media plane owns long-lived ingest, durable receipts, media delivery and evidence finalization.</p>
+    <div class="doc-layout"><article class="doc-main">
+      <section id="topology"><h2>Topology</h2><div class="grid-3">
+        <div class="card"><span class="tag">Capture</span><h3>Android + PWA</h3><p>Enroll a pseudonymous key, create a capture session, sign short media fragments and telemetry, retain unacknowledged material locally, and submit a signed end when possible.</p></div>
+        <div class="card"><span class="tag">Control</span><h3>Sites/Vinext + D1</h3><p>Public pages, device/capture APIs, capability issuance, location-release policy and a public read model fed by authenticated idempotent ledger events.</p></div>
+        <div class="card"><span class="tag">Media</span><h3>Caddy + Rust services</h3><p>Gateway, worker, PostgreSQL and S3-compatible storage. The media plane performs byte hashing, signatures, persistence, finalization, reports and downloads.</p></div>
+      </div><div class="source-note">Cloudflare Workers never run FFmpeg, C2PA authoring, PDF generation or long-lived upload streams. That boundary keeps bounded edge requests separate from stateful media processing.</div></section>
+
+      <section id="authority"><h2>Data authority</h2><dl class="term-grid">
+        <dt>PostgreSQL</dt><dd>Authoritative workflow, captures, streams, fragment index, jobs, leases, receipt anchors, outbox and immutable audit events.</dd>
+        <dt>MinIO / S3</dt><dd>Exact received objects and derived HLS, reports, C2PA outputs and bundles. Original keys are never overwritten.</dd>
+        <dt>D1</dt><dd>Public read projection for fast Sites pages. It is not the evidence authority and can be rebuilt from ledger events.</dd>
+        <dt>Device queue</dt><dd>Encrypted bounded buffer for material not yet acknowledged. Acknowledged fragments are deleted first under storage pressure.</dd>
+      </dl></section>
+
+      <section id="trust"><h2>Trust boundaries</h2><div class="grid-2">
+        <div class="card"><h3>Device identity key</h3><p>Long-lived, non-exportable P-256 key where supported. It signs the session binding and end manifest, not every media fragment.</p></div>
+        <div class="card"><h3>Capture session key</h3><p>Ephemeral P-256 key for high-frequency fragment and telemetry envelopes. Its authority is limited to one capture.</p></div>
+        <div class="card"><h3>Server receipt key</h3><p>Signs durable-receipt facts and report signatures. Private material stays outside PostgreSQL and D1.</p></div>
+        <div class="card"><h3>Offline admin key</h3><p>Signs tombstone actions. Only its public key belongs on the server; no browser administration account is added.</p></div>
+      </div></section>
+
+      <section id="state"><h2>Capture state machine</h2><div class="table-wrap"><table class="status-table"><thead><tr><th>From</th><th>Event</th><th>To</th><th>Meaning</th></tr></thead><tbody>
+        <tr><td><code>initializing</code></td><td>First fragment accepted</td><td><code>live</code></td><td>The server has durable media.</td></tr>
+        <tr><td><code>live</code></td><td>30 seconds without a fragment</td><td><code>stalled</code></td><td>Preserve and display the last receipt; do not infer an ending.</td></tr>
+        <tr><td><code>stalled</code></td><td>Valid next fragment within 15 minutes</td><td><code>live</code></td><td>Continue the same signed chain.</td></tr>
+        <tr><td><code>live/stalled</code></td><td>Valid device-signed end</td><td><code>sealed</code></td><td>Declared tracks, counts and final digests reconcile.</td></tr>
+        <tr><td><code>open state</code></td><td>Resume window expires</td><td><code>interrupted</code></td><td>Finalize only the highest contiguous accepted prefix.</td></tr>
+        <tr><td><code>sealed/interrupted</code></td><td>Valid offline-signed action</td><td><code>tombstoned</code></td><td>Hide media delivery; retain public verification history.</td></tr>
+      </tbody></table></div></section>
+
+      <section id="interfaces"><h2>Versioned interfaces</h2><h3>Control plane</h3>
+        <div class="api-route"><strong>POST</strong><code>/api/v1/devices/attest</code></div><div class="api-route"><strong>POST</strong><code>/api/v1/captures</code></div><div class="api-route"><strong>GET</strong><code>/api/v1/captures?status=live|recent</code></div><div class="api-route"><strong>GET</strong><code>/api/v1/captures/{captureId}</code></div><div class="api-route"><strong>GET</strong><code>/api/v1/captures/{captureId}/verification</code></div><div class="api-route"><strong>GET</strong><code>/api/v1/devices/{fingerprint}/captures</code></div><div class="api-route"><strong>POST</strong><code>/api/internal/v1/ledger-events</code></div>
+        <h3>Media plane</h3><div class="api-route"><strong>PUT</strong><code>/ingest/v1/{captureId}/{streamId}/{sequence}</code></div><div class="api-route"><strong>POST</strong><code>/ingest/v1/{captureId}/telemetry</code></div><div class="api-route"><strong>POST</strong><code>/ingest/v1/{captureId}/end</code></div><div class="api-route"><strong>GET</strong><code>/live/v1/{captureId}/{streamId}/index.m3u8</code></div><div class="api-route"><strong>GET</strong><code>/events/v1/{captureId}</code></div><div class="api-route"><strong>GET</strong><code>/evidence/v1/{captureId}/…</code></div>
+      </section>
+    </article><aside class="toc" aria-label="On this page"><strong>On this page</strong><a href="#topology">Topology</a><a href="#authority">Data authority</a><a href="#trust">Trust boundaries</a><a href="#state">State machine</a><a href="#interfaces">Interfaces</a></aside></div>
+  </main><footer class="site-footer"><div class="site-footer-inner"><div><strong>ProofLine architecture</strong><div class="fine-print">Immutable originals; rebuildable projections.</div></div><div class="footer-links"><a href="../getting-started/">Start</a><a href="../evidence/">Next: Evidence</a><a href="../project-overview/">Overview</a></div></div></footer>
+</body></html>
+

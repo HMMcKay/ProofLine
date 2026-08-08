@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="ProofLine threat model, abuse controls, privacy policy and claims boundary."><title>Security and Threat Model — ProofLine Documentation</title><link rel="stylesheet" href="../assets/docs.css"><script src="../assets/docs.js" defer></script></head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header"><div class="header-inner"><a class="brand" href="../"><span class="brand-mark">PL</span><span>ProofLine Docs</span></a><button class="nav-toggle" type="button" data-nav-toggle aria-controls="site-nav" aria-expanded="false">Menu</button><nav class="site-nav" id="site-nav" data-site-nav aria-label="Documentation"><a href="../">Why ProofLine</a><a href="../getting-started/">Start</a><a href="../architecture/">Architecture</a><a href="../evidence/">Evidence</a><a href="./" aria-current="page">Security</a><a href="../operations/">Operations</a><a href="../validation/">Validation</a></nav></div></header>
+  <main class="page-shell" id="main"><div class="breadcrumb"><a href="../">Documentation</a> / Security</div><p class="eyebrow">Threat model</p><h1 class="page-title">Make tampering visible without pretending uncertainty disappeared.</h1><p class="lead">ProofLine is designed against local deletion, truncation, substitution and ambiguous endings. It cannot make an untrusted scene, compromised device or malicious server objectively truthful.</p>
+    <div class="doc-layout"><article class="doc-main">
+      <section id="claims"><h2>Claims ProofLine can support</h2><ul><li>Exported bytes match signed fragment digests and durable receipts.</li><li>The displayed start is the first encoded frame in the app-signed chain.</li><li>A sealed ending reconciles every accepted declared track with a device-signed end manifest.</li><li>An interrupted ending is the highest contiguous prefix the server accepted before the resume window expired.</li><li>Verified attestation describes the enrolled signing key and measured app/device state—not the moral reliability of the operator.</li><li>Signed telemetry, server time and valid TSA tokens can corroborate time and place.</li></ul></section>
+
+      <section id="unknown"><h2>What remains attackable or unknowable</h2><div class="grid-2">
+        <div class="card"><h3>Scene attacks</h3><p>Staging, coercion, selective framing, an event outside the field of view, a deepfake shown to the lens or screen re-recording.</p></div>
+        <div class="card"><h3>Device attacks</h3><p>Rooted phones, malicious camera HAL/firmware, sensor spoofing, stolen unlocked keys and vulnerabilities in a trusted execution environment.</p></div>
+        <div class="card"><h3>Missing-before-server data</h3><p>Frames the sensor produced but the app never encoded, or fragments that existed only in an unacknowledged local queue when the device was destroyed.</p></div>
+        <div class="card"><h3>Custody and legal judgment</h3><p>A malicious server operator, key theft, case-specific chain of custody, court admissibility and evidentiary weight.</p></div>
+      </div></section>
+
+      <section id="privacy"><h2>Public-by-design privacy boundary</h2><div class="danger-box"><strong>Irrevocably public warning:</strong> ProofLine has no private capture mode, user account or later “unpublish” promise. First launch must communicate this before permission requests.</div><ul><li>Every capture receives a public permalink and a pseudonymous device grouping.</li><li>Exact coordinates are retained immediately.</li><li>While live, public location is reduced to approximately one-kilometer precision.</li><li>Exact coordinates become public 30 minutes after capture ends.</li><li>“My devices” is a local convenience list, not authentication or ownership proof.</li></ul><p>The delayed location release still creates real safety risk. Operators should consider stalking, retaliation, vulnerable-person and safe-location exposure before enabling a public deployment.</p></section>
+
+      <section id="abuse"><h2>Abuse controls</h2><div class="table-wrap"><table class="status-table"><thead><tr><th>Control</th><th>Default</th><th>Purpose</th></tr></thead><tbody>
+        <tr><td>Concurrent capture per device</td><td>1</td><td>Limit automated abuse and runaway clients.</td></tr>
+        <tr><td>Concurrent capture per IP</td><td>3</td><td>Bound shared ingress pressure.</td></tr>
+        <tr><td>Capture bytes</td><td>5 GiB</td><td>Hard ceiling independent of the 60-minute duration cap.</td></tr>
+        <tr><td>Device/day</td><td>10 GiB</td><td>Daily pseudonymous-key quota.</td></tr>
+        <tr><td>IP/day</td><td>25 GiB</td><td>Daily network-source quota.</td></tr>
+        <tr><td>PWA clients</td><td>Stricter configurable limits</td><td>Reflect lower assurance and easier key churn.</td></tr>
+      </tbody></table></div><p>The gateway also validates upload capabilities, route/session identity, signatures, BMFF/container shape, MIME, codec, dimensions, timestamps, sequence and fragment size. Storage unavailability fails closed.</p></section>
+
+      <section id="tombstone"><h2>Tombstones</h2><p>An offline-controlled admin key signs canonical tombstone actions for safety, illegality and abuse response. A tombstone makes playback and raw media downloads return unavailable while preserving:</p><ul><li>Media hashes and object receipt metadata</li><li>Server receipts and receipt anchors</li><li>The offline-admin signature and public reason</li><li>Prior audit events and report metadata</li></ul><p>Tombstoning is not cryptographic deletion and should not be advertised as erasure.</p></section>
+
+      <section id="server"><h2>Malicious-server risk</h2><p>A server that controls object storage and its signing key could withhold new material, refuse uploads or present a partial public view. Receipt exports, optional RFC 3161 anchors, public replication and third-party witnesses reduce—but do not remove—this trust.</p><p>Production deployments should move signing to KMS/HSM or PKCS#11, publish server public-key history, retain off-site backups and encourage early independent bundle downloads.</p></section>
+
+      <section id="language"><h2>Required language</h2><div class="warning-box"><strong>Use:</strong> “high-assurance provenance evidence,” “durably received by this server,” “first encoded frame in the signed chain,” and the exact completeness result.</div><div class="danger-box"><strong>Do not use:</strong> “ironclad,” “court certified,” “guaranteed authentic,” “guaranteed admissible,” or language implying C2PA proves the depicted event objectively happened.</div></section>
+    </article><aside class="toc" aria-label="On this page"><strong>On this page</strong><a href="#claims">Supported claims</a><a href="#unknown">Unknowns</a><a href="#privacy">Privacy</a><a href="#abuse">Abuse controls</a><a href="#tombstone">Tombstones</a><a href="#server">Server risk</a><a href="#language">Language</a></aside></div>
+  </main><footer class="site-footer"><div class="site-footer-inner"><div><strong>ProofLine security model</strong><div class="fine-print">Every assurance label must be earned and visible.</div></div><div class="footer-links"><a href="../evidence/">Evidence</a><a href="../operations/">Next: Operations</a><a href="../research/">Research</a></div></div></footer>
+</body></html>
+

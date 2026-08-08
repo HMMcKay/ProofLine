@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="ProofLine local validation results, artifacts, limitations and physical-device acceptance matrix."><title>Validation — ProofLine Documentation</title><link rel="stylesheet" href="../assets/docs.css"><script src="../assets/docs.js" defer></script></head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header"><div class="header-inner"><a class="brand" href="../"><span class="brand-mark">PL</span><span>ProofLine Docs</span></a><button class="nav-toggle" type="button" data-nav-toggle aria-controls="site-nav" aria-expanded="false">Menu</button><nav class="site-nav" id="site-nav" data-site-nav aria-label="Documentation"><a href="../">Why ProofLine</a><a href="../getting-started/">Start</a><a href="../architecture/">Architecture</a><a href="../evidence/">Evidence</a><a href="../security/">Security</a><a href="../operations/">Operations</a><a href="./" aria-current="page">Validation</a></nav></div></header>
+  <main class="page-shell" id="main"><div class="breadcrumb"><a href="../">Documentation</a> / Validation</div><p class="eyebrow">Evidence about the implementation</p><h1 class="page-title">Local passes are not production proof.</h1><p class="lead">This record distinguishes executed checks from physical-device, infrastructure and trust work that still requires external systems.</p>
+    <div class="doc-layout"><article class="doc-main">
+      <section id="passed"><h2>Passed locally on August 7–8, 2026</h2><div class="table-wrap"><table class="status-table"><thead><tr><th>Surface</th><th>Executed evidence</th></tr></thead><tbody>
+        <tr><td>Sites/Vinext</td><td>ESLint, TypeScript no-emit typecheck, protocol vectors, rendered-route assertions and production build.</td></tr>
+        <tr><td>Browser layouts</td><td>Homepage, protocol boundary, first-launch warning, desktop and approximately 390 × 844 responsive layout. The ledger remained honestly empty.</td></tr>
+        <tr><td>Rust 1.88</td><td>Formatting check, Clippy across all targets with warnings denied, unit/doc tests and optimized workspace build.</td></tr>
+        <tr><td>Containers</td><td>Digest-pinned builds, migrations, PostgreSQL, MinIO, Caddy, gateway/worker health and media-plane scenario.</td></tr>
+        <tr><td>Protocol abuse</td><td>Forged signature, reordering, mutation, duplicate retry, invalid end signer, interrupted prefix, recovery supplement and tombstone behavior.</td></tr>
+        <tr><td>C2PA fixture</td><td>Official c2patool 0.26.60 authored and validated AVC/AAC CMAF asset binding; strict trust rejected the development credential.</td></tr>
+        <tr><td>Android build</td><td>JVM vectors, lint, debug APK, compiled instrumentation-test APK and development-signed release APK/AAB.</td></tr>
+        <tr><td>Report and operations</td><td>PDF rendered with Poppler, 362-component CycloneDX SBOM, PostgreSQL/MinIO backup and restore.</td></tr>
+      </tbody></table></div></section>
+
+      <section id="e2e"><h2>Media-plane scenario coverage</h2><div class="grid-2">
+        <div class="card"><span class="tag success">Accepted</span><h3>Valid progression</h3><p>Signed session, initial fragment, identical duplicate retry, durable receipt, device-signed end and retained public report.</p></div>
+        <div class="card"><span class="tag success">Recovered</span><h3>Interrupted progression</h3><p>Forced interruption, server-received-only finalization and a late valid recovery supplement without history rewrite.</p></div>
+        <div class="card"><span class="tag danger">Rejected</span><h3>Integrity attacks</h3><p>Forged signature, reordered sequence, conflicting bytes, mutated payload and wrong end signer.</p></div>
+        <div class="card"><span class="tag warning">Suppressed safely</span><h3>Tombstone</h3><p>Invalid admin signature rejected; valid offline signature hides media while preserving the report and audit evidence.</p></div>
+      </div></section>
+
+      <section id="android"><h2>Android artifacts and reproducibility</h2><p>Local artifacts are produced under <code>artifacts/android/</code> and intentionally ignored by Git. The runtime payload matched across two clean release builds. Full APK/AAB bytes did not match because signature containers and R8’s build-time diagnostic metadata vary.</p><div class="warning-box"><strong>Trust boundary:</strong> the generated release APK/AAB uses an ephemeral development signing key. It is reproducibility evidence for the payload—not a production publisher identity.</div></section>
+
+      <section id="not-verified"><h2>Not verified here</h2><ul><li>StrongBox/TEE attestation chain, Google revocation status, verified boot/root of trust and production package-signature allowlisting.</li><li>Real-phone camera, microphone, GNSS, barometer, inertial timing, thermal shutdown, process death, storage pressure and concurrent cameras.</li><li>Execution of the Compose instrumentation test on an emulator or phone; the test APK compiled only.</li><li>Continuous Media3-authored CMAF from Android.</li><li>Final-asset C2PA for current capture output or an independently installed official validator separate from the authoring executable.</li><li>Server-generated preview sprites and hover/stylus scrubbing.</li><li>Production TSA, C2PA trust chain, weather adapters, KMS/HSM/PKCS#11 and an independent hostile-server witness.</li><li>VPS DNS/TLS/deployment, separate-host restore, public Sites access and anonymous production capture.</li></ul></section>
+
+      <section id="physical"><h2>Physical-device acceptance matrix</h2><p>Record device model, OS build, security patch, camera IDs, concurrent combinations, keystore security level, attestation result, sensor availability, 15/30/60-minute thermal behavior, offline/reconnect behavior and exported bundle hashes.</p><p>Before production readiness, test at least one StrongBox device, one TEE-only device and one device without concurrent-camera support. Emulator success is not a substitute.</p></section>
+
+      <section id="commands"><h2>Repeat the checks</h2><pre><code>./scripts/verify-local.ps1
+./scripts/verify-local.ps1 -IncludeRust -IncludeContainers -IncludeAndroid -IncludeC2pa</code></pre><p>The second command can take substantially longer and requires Rust 1.88, Docker, Android SDK/JDK and FFmpeg.</p></section>
+    </article><aside class="toc" aria-label="On this page"><strong>On this page</strong><a href="#passed">Passed locally</a><a href="#e2e">Media E2E</a><a href="#android">Android</a><a href="#not-verified">Not verified</a><a href="#physical">Physical matrix</a><a href="#commands">Commands</a></aside></div>
+  </main><footer class="site-footer"><div class="site-footer-inner"><div><strong>ProofLine validation</strong><div class="fine-print">No emulator or fixture is represented as physical-device evidence.</div></div><div class="footer-links"><a href="../operations/">Operations</a><a href="../research/">Research</a><a href="../project-overview/">Overview</a></div></div></footer>
+</body></html>

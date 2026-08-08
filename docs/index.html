@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="ProofLine documentation: why live off-device video preservation matters, how the evidence protocol works, and what the current implementation can and cannot establish.">
+  <meta name="theme-color" content="#0c1016">
+  <title>ProofLine Documentation — Preserve the received record</title>
+  <link rel="stylesheet" href="./assets/docs.css">
+  <script src="./assets/docs.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="./"><span class="brand-mark">PL</span><span>ProofLine Docs</span></a>
+      <button class="nav-toggle" type="button" data-nav-toggle aria-controls="site-nav" aria-expanded="false">Menu</button>
+      <nav class="site-nav" id="site-nav" data-site-nav aria-label="Documentation">
+        <a href="./" aria-current="page">Why ProofLine</a>
+        <a href="./getting-started/">Start</a>
+        <a href="./architecture/">Architecture</a>
+        <a href="./evidence/">Evidence</a>
+        <a href="./security/">Security</a>
+        <a href="./operations/">Operations</a>
+        <a href="./validation/">Validation</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero">
+      <div class="hero-inner">
+        <div>
+          <p class="eyebrow">Public video provenance · ProofLine v2</p>
+          <h1>A recording should not disappear with the phone.</h1>
+          <p class="lead">ProofLine sends signed video fragments to a durable public evidence service while capture is still happening. If the device is seized, destroyed, stolen, wiped, or disconnected, the server keeps the exact bytes it already acknowledged.</p>
+          <div class="hero-actions">
+            <a class="button primary" href="#documented-cases">See documented incidents</a>
+            <a class="button" href="./getting-started/">Build and run locally</a>
+            <a class="button" href="./project-overview/">Open interactive overview</a>
+          </div>
+        </div>
+        <div class="signal-chain" aria-label="ProofLine preservation sequence">
+          <div class="signal-node"><strong>1 · Capture locally</strong><span>Camera, microphone and available sensor context produce short signed records.</span></div>
+          <div class="signal-node"><strong>2 · Commit off-device</strong><span>The gateway independently hashes and durably stores each accepted fragment.</span></div>
+          <div class="signal-node"><strong>3 · Return a receipt</strong><span>A server signature binds the hash, sequence, predecessor, object version and receipt time.</span></div>
+          <div class="signal-node"><strong>4 · Preserve the honest ending</strong><span>Signed stop and server-received interruption are reported as different claims.</span></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="page-shell">
+      <section class="section" id="documented-cases">
+        <div class="section-heading">
+          <p class="eyebrow">The problem is documented</p>
+          <h2>Recordings have been deleted, seized, destroyed or deliberately disabled.</h2>
+          <p>These examples use government records, guilty pleas, court materials and clearly labeled civil-settlement reporting. ProofLine would not decide whether the depicted conduct was lawful; it addresses the narrower engineering failure that a locally controlled recording can vanish before independent review.</p>
+        </div>
+        <div class="case-grid">
+          <article class="card case-card">
+            <span class="tag danger">Guilty plea · deletion</span>
+            <div><h3>Video deleted during an excessive-force cover-up</h3><div class="case-meta">Eastern Correctional Institution, Maryland · conduct in 2021 · plea announced 2024</div></div>
+            <p>The Justice Department reported that correctional officer David Quillen recorded an injured inmate, then deleted the video after officers said it looked bad for the officer who used force. Quillen pleaded guilty to conspiracy and destruction of records; the officer who assaulted the inmate also admitted the unlawful assault.</p>
+            <p><strong>ProofLine relevance:</strong> fragments acknowledged during recording would remain off-device even if the camera or local file were later erased.</p>
+            <a class="source-link" href="https://www.justice.gov/archives/opa/pr/maryland-correctional-officer-pleads-guilty-conspiracy-and-destruction-records-offenses">U.S. Department of Justice source →</a>
+          </article>
+
+          <article class="card case-card">
+            <span class="tag warning">Civil settlement · citizen video</span>
+            <div><h3>Officer seized a teenager’s phone and deleted her recording</h3><div class="case-meta">Newark, New Jersey · incident in 2010 · settlement announced 2012</div></div>
+            <p>According to the ACLU of New Jersey’s settlement announcement, Khaliah Fitchette recorded police activity on a bus. An officer seized her phone and deleted the video. Newark settled the suit and issued training stating that officers could not confiscate, delete or demand to inspect citizen recordings without a warrant.</p>
+            <p><strong>ProofLine relevance:</strong> seizure of the handset would not revoke server receipts or erase fragments already stored remotely.</p>
+            <a class="source-link" href="https://www.aclu.org/press-releases/newark-police-settles-lawsuit-over-arrest-teen-cellphone-video">ACLU settlement source →</a>
+          </article>
+
+          <article class="card case-card">
+            <span class="tag danger">Guilty plea · self-recorded video</span>
+            <div><h3>Capitol-breach defendant deleted videos he recorded</h3><div class="case-meta">Washington, D.C. · conduct in 2021 · plea announced 2023</div></div>
+            <p>The Justice Department reported that Grayson Sherrill pleaded guilty to assaulting, resisting or impeding officers and that, after January 6, he deleted videos from his phone that he had taken while at the Capitol.</p>
+            <p><strong>ProofLine relevance:</strong> deleting the local gallery later would not delete independently stored capture fragments or their receipt history.</p>
+            <a class="source-link" href="https://www.justice.gov/usao-dc/pr/north-carolina-man-pleads-guilty-felony-charge-actions-during-jan-6-capitol-breach-0">U.S. Department of Justice source →</a>
+          </article>
+
+          <article class="card case-card">
+            <span class="tag danger">Guilty plea · concealed activity</span>
+            <div><h3>Juror-bribery video deleted to conceal involvement</h3><div class="case-meta">Minnesota · conduct and plea in 2024</div></div>
+            <p>The Justice Department reported that Abdimajid Nur received a video of a cash-bribe delivery, then deleted the video, the encrypted messaging app and other evidence. He pleaded guilty to bribery of a juror.</p>
+            <p><strong>ProofLine relevance and limit:</strong> ProofLine can preserve media captured through its protocol; it is intentionally not a general after-the-fact upload service.</p>
+            <a class="source-link" href="https://www.justice.gov/usao-mn/pr/shakopee-man-pleads-guilty-feeding-our-future-jury-bribery-scheme">U.S. Department of Justice source →</a>
+          </article>
+
+          <article class="card case-card">
+            <span class="tag warning">Federal plea · camera disabled</span>
+            <div><h3>Officer deliberately disabled or removed a body camera</h3><div class="case-meta">Columbus, Ohio · conduct in 2023–2024 · plea announced 2025</div></div>
+            <p>The Justice Department reported that former officer Nicholas Duty admitted intentionally deactivating or removing a body-worn camera during encounters with women to impede a federal investigation.</p>
+            <p><strong>ProofLine boundary:</strong> no provenance system can preserve an event if capture never starts. Once ProofLine is receiving fragments, however, a later interruption remains visible instead of silently becoming a shorter file.</p>
+            <a class="source-link" href="https://www.justice.gov/usao-sdoh/pr/former-columbus-police-officer-pleads-guilty-destroying-altering-records-turning-body">U.S. Department of Justice source →</a>
+          </article>
+
+          <article class="card case-card">
+            <span class="tag warning">Federal court filing · allegation</span>
+            <div><h3>Baltimore recording-deletion allegations shaped federal guidance</h3><div class="case-meta">Baltimore, Maryland · incident alleged in 2010 · DOJ guidance in 2012</div></div>
+            <p>In a federal filing concerning Christopher Sharp’s civil case, the Justice Department described his allegation that officers seized his phone and deleted recordings after he filmed an arrest. DOJ stated that police policy should prohibit deleting or destroying recordings under any circumstances.</p>
+            <p><strong>ProofLine relevance:</strong> the remote copy and its receipt history exist outside the physical control of the person holding the phone.</p>
+            <a class="source-link" href="https://www.justice.gov/sites/default/files/crt/legacy/2012/05/17/Sharp_ltr_5-14-12.pdf">U.S. Department of Justice court letter (PDF) →</a>
+          </article>
+        </div>
+        <div class="source-note"><strong>Source discipline:</strong> “guilty plea” describes an admitted criminal disposition. “Civil settlement” and “allegation” are not presented as criminal findings. Dates refer to the underlying conduct and source publication, not necessarily sentencing.</div>
+      </section>
+
+      <section class="section" id="method">
+        <div class="section-heading">
+          <p class="eyebrow">The engineering response</p>
+          <h2>Move the evidence boundary away from the handset.</h2>
+          <p>ProofLine does not try to make a phone indestructible. It narrows the loss window by creating short, signed, independently receipted units while recording is underway.</p>
+        </div>
+        <div class="grid-2">
+          <div class="outcome-list">
+            <div class="outcome"><h3>Sign at the capture edge</h3><p>An ephemeral session key signs each fragment envelope. The device identity key binds that session to a pseudonymous public fingerprint and explicit assurance level.</p></div>
+            <div class="outcome"><h3>Verify before acknowledging</h3><p>The gateway independently hashes the request body, validates continuity and writes durable object storage before signing a receipt.</p></div>
+            <div class="outcome"><h3>Keep original history append-only</h3><p>Duplicates, conflicts, gaps, recovery supplements and tombstones stay observable. Derived playback and reports never overwrite originals.</p></div>
+            <div class="outcome"><h3>Use exact completeness language</h3><p>A valid signed end can seal declared tracks. An interruption asserts only the highest contiguous prefix the server accepted.</p></div>
+          </div>
+          <div>
+            <div class="success-box"><strong>What survives device loss</strong><p>Every fragment for which the client received—or can later verify—a valid durable server receipt.</p></div>
+            <div class="warning-box"><strong>What may still be lost</strong><p>Unacknowledged fragments buffered only on a device that is destroyed before reconnection.</p></div>
+            <div class="danger-box"><strong>What cryptography cannot prove</strong><p>That a scene was not staged, that a compromised camera stack was honest, who pressed Stop, or that the phone’s sensors reported objective truth.</p></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="documentation">
+        <div class="section-heading"><p class="eyebrow">Documentation map</p><h2>From first build to independent verification.</h2></div>
+        <div class="docs-grid">
+          <article class="card docs-card"><h3>Getting started</h3><p>Prerequisites, one-command setup, local services, Android builds and common Windows issues.</p><a href="./getting-started/">Start here →</a></article>
+          <article class="card docs-card"><h3>Architecture</h3><p>Trust boundaries, control/media-plane split, storage authority, state machine and public APIs.</p><a href="./architecture/">Explore architecture →</a></article>
+          <article class="card docs-card"><h3>Evidence protocol</h3><p>Identity, canonical signing, fragment chains, receipts, telemetry, endings, anchors, C2PA and bundles.</p><a href="./evidence/">Inspect evidence →</a></article>
+          <article class="card docs-card"><h3>Security model</h3><p>Threats, abuse controls, privacy, pseudonymous identity, tombstones and claims ProofLine refuses to make.</p><a href="./security/">Read the threat model →</a></article>
+          <article class="card docs-card"><h3>Operations</h3><p>Docker topology, secrets, TLS, observability, quotas, backup/restore and release boundaries.</p><a href="./operations/">Operate ProofLine →</a></article>
+          <article class="card docs-card"><h3>Validation</h3><p>Executed local checks, Android artifacts, C2PA fixture, known gaps and physical-device acceptance.</p><a href="./validation/">Review validation →</a></article>
+          <article class="card docs-card"><h3>Research sources</h3><p>Case-study citations, source classifications and notes about what each example does—and does not—show.</p><a href="./research/">Review sources →</a></article>
+          <article class="card docs-card"><h3>Interactive overview</h3><p>A visual report spanning goals, capture methodology, collected evidence, claims, implementation and readiness.</p><a href="./project-overview/">Open full view →</a></article>
+        </div>
+      </section>
+
+      <section class="section" id="interactive-overview">
+        <div class="section-heading">
+          <p class="eyebrow">ProofLine v2 · project overview</p>
+          <h2>Explore the full implementation visually.</h2>
+          <p>The embedded report is self-contained and interactive. Use its tabs to move through the system, method, evidence inventory, claims, implementation and readiness boundary.</p>
+        </div>
+        <div class="overview-wrap">
+          <iframe class="overview-frame" src="./project-overview/" title="Interactive ProofLine v2 project overview" loading="lazy"></iframe>
+          <div class="overview-toolbar"><span class="case-meta">Keyboard accessible · responsive · light and dark themes</span><a class="button" href="./project-overview/">Open overview full page</a></div>
+        </div>
+      </section>
+
+      <section class="section" id="claim-boundary">
+        <div class="section-heading"><p class="eyebrow">The claim boundary</p><h2>High-assurance provenance—not objective truth.</h2></div>
+        <div class="grid-3">
+          <div class="card"><span class="tag success">Can establish</span><h3>Integrity and received continuity</h3><p>Whether exported bytes match fragment hashes, signed chains, durable receipts, end manifests and audit history.</p></div>
+          <div class="card"><span class="tag warning">Can corroborate</span><h3>Time, place and device context</h3><p>Attestation, server time, optional TSA anchors, location, motion, pressure and device-state observations.</p></div>
+          <div class="card"><span class="tag danger">Cannot establish</span><h3>Scene truth or admissibility</h3><p>Whether the scene was staged, sensors were spoofed, an operator was coerced, or a court will admit or credit the evidence.</p></div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <div><strong>ProofLine v2 documentation</strong><div class="fine-print">Public provenance evidence with explicit limits.</div></div>
+      <div class="footer-links"><a href="./getting-started/">Build</a><a href="./evidence/">Protocol</a><a href="./security/">Threat model</a><a href="./validation/">Validation</a><a href="./project-overview/">Overview</a></div>
+    </div>
+  </footer>
+</body>
+</html>
