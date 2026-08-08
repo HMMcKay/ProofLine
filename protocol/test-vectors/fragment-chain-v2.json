@@ -1,0 +1,19 @@
+{
+  "name": "ProofLine v2 first fragment",
+  "media_base64url": "UHJvb2ZMaW5lIGZyYWdtZW50IHRlc3QgdmVjdG9yIHYyCg",
+  "media_digest": "b66675c163e3de14a094ccf85d60102700e33e937ba9e1293ae66679f5be00eb",
+  "chain_input": {
+    "protocol_version": "proofline/2",
+    "capture_id": "cap_vector_001",
+    "stream_id": "rear_vector_001",
+    "sequence": 0,
+    "previous_chain_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+    "media_digest": "b66675c163e3de14a094ccf85d60102700e33e937ba9e1293ae66679f5be00eb",
+    "byte_length": 34,
+    "pts_start_us": 0,
+    "pts_end_us": 2000000,
+    "telemetry_root": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "canonical": "{\"byte_length\":34,\"capture_id\":\"cap_vector_001\",\"media_digest\":\"b66675c163e3de14a094ccf85d60102700e33e937ba9e1293ae66679f5be00eb\",\"previous_chain_digest\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"protocol_version\":\"proofline/2\",\"pts_end_us\":2000000,\"pts_start_us\":0,\"sequence\":0,\"stream_id\":\"rear_vector_001\",\"telemetry_root\":\"0000000000000000000000000000000000000000000000000000000000000000\"}",
+  "chain_digest": "065b7020a7e776bdfdfa24acb164e57a9dcb876c8a38ad44eb64b6bb35ec3042"
+}

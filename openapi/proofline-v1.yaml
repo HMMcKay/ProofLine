@@ -1,0 +1,175 @@
+openapi: 3.1.0
+info:
+  title: ProofLine public and ingest APIs
+  version: 1.0.0
+  description: Public provenance ledger plus capability-bound media ingest. Signed protocol objects use protocol/proofline-v2 schema.
+servers:
+  - url: https://proofline.example
+    description: Sites control plane
+  - url: https://media.proofline.example
+    description: Media plane
+paths:
+  /api/v1/devices/attest:
+    post:
+      summary: Issue a challenge or enroll a device identity
+      operationId: attestDevice
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/AttestationRequest' } } } }
+      responses:
+        '200': { description: Challenge or explicit assurance result, content: { application/json: { schema: { type: object } } } }
+        '422': { $ref: '#/components/responses/ProtocolError' }
+  /api/v1/captures:
+    get:
+      summary: List live or recent public captures
+      parameters:
+        - { name: status, in: query, schema: { type: string, enum: [live, recent] } }
+      responses:
+        '200': { description: Public captures, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Capture' } } } } }
+    post:
+      summary: Create a public capability-bound capture
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/CreateCapture' } } } }
+      responses:
+        '201': { description: Capture identifiers and short-lived upload capability, content: { application/json: { schema: { type: object } } } }
+        '409': { $ref: '#/components/responses/ProtocolError' }
+        '429': { $ref: '#/components/responses/ProtocolError' }
+  /api/v1/captures/{captureId}:
+    parameters: [ { $ref: '#/components/parameters/CaptureId' } ]
+    get:
+      summary: Get a capture and its public streams
+      responses:
+        '200': { description: Capture, content: { application/json: { schema: { $ref: '#/components/schemas/Capture' } } } }
+        '404': { $ref: '#/components/responses/ProtocolError' }
+  /api/v1/captures/{captureId}/verification:
+    parameters: [ { $ref: '#/components/parameters/CaptureId' } ]
+    get:
+      summary: Get public verification projection and downloads
+      responses:
+        '200': { description: Verification report projection, content: { application/json: { schema: { type: object } } } }
+  /api/v1/devices/{fingerprint}/captures:
+    get:
+      summary: List captures in a public device key lineage
+      parameters:
+        - { name: fingerprint, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: Device history, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Capture' } } } } }
+  /api/internal/v1/ledger-events:
+    post:
+      summary: Project a signed idempotent gateway event into D1
+      security: [ internalHmac: [] ]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/LedgerEvent' } } } }
+      responses:
+        '200': { description: Applied or previously applied }
+        '401': { $ref: '#/components/responses/ProtocolError' }
+  /ingest/v1/{captureId}/{streamId}/{sequence}:
+    put:
+      summary: Durably accept one signed media fragment
+      security: [ uploadCapability: [] ]
+      parameters:
+        - { $ref: '#/components/parameters/CaptureId' }
+        - { name: streamId, in: path, required: true, schema: { type: string } }
+        - { name: sequence, in: path, required: true, schema: { type: integer, minimum: 0 } }
+        - { name: X-ProofLine-Envelope, in: header, required: true, schema: { type: string, description: Base64url RFC 8785 SignedFragmentEnvelope } }
+        - { name: X-ProofLine-Signature, in: header, required: true, schema: { type: string, description: Base64url ES256 P-1363 signature } }
+      requestBody: { required: true, content: { video/mp4: { schema: { type: string, format: binary } }, video/webm: { schema: { type: string, format: binary } } } }
+      responses:
+        '200': { description: Original signed server receipt (also returned for an identical duplicate), content: { application/json: { schema: { type: object } } } }
+        '409': { $ref: '#/components/responses/ProtocolError' }
+        '413': { $ref: '#/components/responses/ProtocolError' }
+        '422': { $ref: '#/components/responses/ProtocolError' }
+  /ingest/v1/{captureId}/telemetry:
+    post:
+      summary: Accept a signed compressed telemetry batch
+      security: [ uploadCapability: [] ]
+      parameters: [ { $ref: '#/components/parameters/CaptureId' } ]
+      requestBody: { required: true, content: { application/json: { schema: { type: object } } } }
+      responses:
+        '200': { description: Accepted or identical duplicate }
+        '422': { $ref: '#/components/responses/ProtocolError' }
+  /ingest/v1/{captureId}/end:
+    post:
+      summary: Submit the device-signed ending manifest
+      security: [ uploadCapability: [] ]
+      parameters: [ { $ref: '#/components/parameters/CaptureId' } ]
+      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [manifest, signature], properties: { manifest: { type: object }, signature: { type: string } } } } } }
+      responses:
+        '200': { description: Sealed or gaps-detected result }
+        '409': { $ref: '#/components/responses/ProtocolError' }
+        '422': { $ref: '#/components/responses/ProtocolError' }
+  /live/v1/{captureId}/{streamId}/index.m3u8:
+    get:
+      summary: Get the append-only live playlist
+      parameters: [ { $ref: '#/components/parameters/CaptureId' }, { name: streamId, in: path, required: true, schema: { type: string } } ]
+      responses:
+        '200': { description: HLS playlist, content: { application/vnd.apple.mpegurl: { schema: { type: string } } } }
+        '410': { description: Tombstoned }
+  /events/v1/{captureId}:
+    get:
+      summary: Stream public capture status and sensor summaries
+      parameters: [ { $ref: '#/components/parameters/CaptureId' } ]
+      responses:
+        '200': { description: Server-sent events, content: { text/event-stream: { schema: { type: string } } } }
+  /evidence/v1/{captureId}/original/{streamId}:
+    get:
+      summary: Download the immutable received stream byte sequence
+      parameters: [ { $ref: '#/components/parameters/CaptureId' }, { name: streamId, in: path, required: true, schema: { type: string } } ]
+      responses:
+        '200': { description: Received bytes, content: { application/octet-stream: { schema: { type: string, format: binary } } } }
+        '410': { description: Tombstoned }
+  /evidence/v1/{captureId}/bundle.zip:
+    get:
+      summary: Download self-contained evidence bundle
+      parameters: [ { $ref: '#/components/parameters/CaptureId' } ]
+      responses: { '200': { description: ZIP bundle }, '410': { description: Tombstoned } }
+  /evidence/v1/{captureId}/report.pdf:
+    get:
+      summary: Download signed PDF evidence report
+      parameters: [ { $ref: '#/components/parameters/CaptureId' } ]
+      responses: { '200': { description: PDF report } }
+components:
+  securitySchemes:
+    uploadCapability: { type: http, scheme: bearer }
+    internalHmac: { type: apiKey, in: header, name: X-ProofLine-HMAC }
+  parameters:
+    CaptureId: { name: captureId, in: path, required: true, schema: { type: string } }
+  responses:
+    ProtocolError:
+      description: Explicit protocol or policy failure
+      content: { application/json: { schema: { type: object, required: [error], properties: { error: { type: string } } } } }
+  schemas:
+    AttestationRequest:
+      type: object
+      properties:
+        action: { type: string, enum: [challenge, enroll] }
+        challenge: { type: string }
+        publicKeySpki: { type: string }
+        attestationChain: { type: array, items: { type: string } }
+    CreateCapture:
+      type: object
+      required: [deviceFingerprint, sessionNonce, sessionPublicKeySpki, sessionBindingSignature, streams]
+      properties:
+        deviceFingerprint: { type: string }
+        sessionNonce: { type: string }
+        sessionPublicKeySpki: { type: string }
+        sessionBindingSignature: { type: string }
+        streams: { type: array, minItems: 1, items: { type: object } }
+        location: { type: object, properties: { latitude: { type: number }, longitude: { type: number }, accuracyM: { type: number } } }
+    Capture:
+      type: object
+      required: [id, deviceFingerprint, status, completeness, startedAt]
+      properties:
+        id: { type: string }
+        deviceFingerprint: { type: string }
+        status: { type: string, enum: [initializing, live, stalled, sealed, interrupted, tombstoned] }
+        completeness: { type: string, enum: [complete_with_signed_end, complete_as_server_received, gaps_detected, pending] }
+        assuranceLevel: { type: string, enum: [strongbox, tee, software_attested, web_key] }
+        startedAt: { type: string, format: date-time }
+        endedAt: { type: [string, 'null'], format: date-time }
+    LedgerEvent:
+      type: object
+      required: [id, captureId, type, occurredAt, payload, signature]
+      properties:
+        id: { type: string, format: uuid }
+        captureId: { type: string }
+        type: { type: string }
+        occurredAt: { type: string, format: date-time }
+        payload: { type: object }
+        signature: { type: string }

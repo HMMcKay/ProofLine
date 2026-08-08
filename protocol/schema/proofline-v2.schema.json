@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://proofline.example/protocol/proofline-v2.schema.json",
+  "title": "ProofLine v2 evidence protocol",
+  "type": "object",
+  "$defs": {
+    "assuranceLevel": {
+      "enum": ["strongbox", "tee", "software_attested", "web_key"]
+    },
+    "captureStatus": {
+      "enum": ["initializing", "live", "stalled", "sealed", "interrupted", "tombstoned"]
+    },
+    "completenessClaim": {
+      "enum": ["complete_with_signed_end", "complete_as_server_received", "gaps_detected", "pending"]
+    },
+    "streamRole": {
+      "enum": ["rear_video", "front_video", "audio", "telemetry"]
+    },
+    "streamDeclaration": {
+      "type": "object",
+      "required": ["id", "role", "mime_type", "codec", "has_audio"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[A-Za-z0-9_-]{8,96}$" },
+        "role": { "$ref": "#/$defs/streamRole" },
+        "mime_type": { "type": "string", "maxLength": 96 },
+        "codec": { "type": "string", "maxLength": 48 },
+        "width": { "type": "integer", "minimum": 1, "maximum": 7680 },
+        "height": { "type": "integer", "minimum": 1, "maximum": 4320 },
+        "fps": { "type": "number", "exclusiveMinimum": 0, "maximum": 120 },
+        "has_audio": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "fragmentEnvelope": {
+      "type": "object",
+      "required": ["protocol_version", "capture_id", "stream_id", "sequence", "previous_chain_digest", "media_digest", "chain_digest", "byte_length", "pts_start_us", "pts_end_us", "telemetry_root"],
+      "properties": {
+        "protocol_version": { "const": "proofline/2" },
+        "capture_id": { "type": "string" },
+        "stream_id": { "type": "string" },
+        "sequence": { "type": "integer", "minimum": 0 },
+        "previous_chain_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "media_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "chain_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "byte_length": { "type": "integer", "minimum": 1, "maximum": 33554432 },
+        "pts_start_us": { "type": "integer", "minimum": 0 },
+        "pts_end_us": { "type": "integer", "minimum": 0 },
+        "telemetry_root": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+      },
+      "additionalProperties": false
+    }
+  }
+}
