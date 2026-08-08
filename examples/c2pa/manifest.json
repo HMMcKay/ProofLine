@@ -1,0 +1,30 @@
+{
+  "claim_generator_info": [
+    {
+      "name": "ProofLine C2PA compatibility spike",
+      "version": "2.0.0"
+    }
+  ],
+  "title": "ProofLine synthetic CMAF compatibility fixture",
+  "assertions": [
+    {
+      "label": "c2pa.actions",
+      "data": {
+        "actions": [
+          {
+            "action": "c2pa.created",
+            "digitalSourceType": "http://cv.iptc.org/newscodes/digitalsourcetype/softwareImage"
+          }
+        ]
+      }
+    },
+    {
+      "label": "org.proofline.compatibility",
+      "data": {
+        "fixture": true,
+        "purpose": "C2PA fragmented BMFF authoring and independent official-validator check",
+        "warning": "Synthetic test fixture signed with an untrusted development certificate"
+      }
+    }
+  ]
+}

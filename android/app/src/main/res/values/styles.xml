@@ -1,0 +1,9 @@
+<resources>
+    <style name="Theme.ProofLine" parent="android:style/Theme.Material.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:statusBarColor">#090A0A</item>
+        <item name="android:navigationBarColor">#090A0A</item>
+        <item name="android:colorAccent">#D5FF46</item>
+    </style>
+</resources>

@@ -1,0 +1,3 @@
+Verifying manifest: "init-0.mp4"
+0 Init manifests validated
+Error validating segments: ValidationStatus { code: "signingCredential.untrusted", url: Some("self#jumbf=/c2pa/urn:c2pa:8e8db566-64d7-40da-a510-01078b7009a9/c2pa.signature"), explanation: Some("signing certificate untrusted"), success: None, kind: Failure, ingredient_uri: None }

@@ -1,0 +1,71 @@
+name: proofline
+services:
+  postgres:
+    image: postgres:17.5-bookworm@sha256:fbcea1bd13b6a882cd6caa6b58db3ae5c102efe50ec625b3e2a5cbc50db5bfe4
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-proofline}
+      POSTGRES_USER: ${POSTGRES_USER:-proofline}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-proofline-development-only}
+    volumes: ["postgres-data:/var/lib/postgresql/data"]
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"], interval: 5s, timeout: 3s, retries: 20 }
+    restart: unless-stopped
+  minio:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z@sha256:a1ea29fa28355559ef137d71fc570e508a214ec84ff8083e39bc5428980b015e
+    command: server /data --console-address :9001
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-proofline-minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-proofline-development-only}
+    volumes: ["media-data:/data"]
+    healthcheck: { test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"], interval: 5s, timeout: 3s, retries: 20 }
+    restart: unless-stopped
+  minio-init:
+    image: minio/mc:RELEASE.2025-04-16T18-13-26Z@sha256:aead63c77f9db9107f1696fb08ecb0faeda23729cde94b0f663edf4fe09728e3
+    depends_on: { minio: { condition: service_healthy } }
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["mc alias set local http://minio:9000 $$MINIO_ROOT_USER $$MINIO_ROOT_PASSWORD && mc mb --ignore-existing local/proofline-media"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-proofline-minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-proofline-development-only}
+  gateway:
+    build: { context: ., dockerfile: services/media/Dockerfile }
+    environment: &media-env
+      DATABASE_URL: postgres://${POSTGRES_USER:-proofline}:${POSTGRES_PASSWORD:-proofline-development-only}@postgres:5432/${POSTGRES_DB:-proofline}
+      PROOFLINE_BIND: 0.0.0.0:8080
+      PROOFLINE_BUCKET: proofline-media
+      PROOFLINE_OBJECT_ENDPOINT: http://minio:9000
+      PROOFLINE_OBJECT_REGION: us-east-1
+      PROOFLINE_OBJECT_ACCESS_KEY: ${MINIO_ROOT_USER:-proofline-minio}
+      PROOFLINE_OBJECT_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-proofline-development-only}
+      PROOFLINE_INTERNAL_SECRET: ${PROOFLINE_INTERNAL_SECRET:-proofline-development-secret}
+      PROOFLINE_SERVER_SIGNING_KEY_B64: ${PROOFLINE_SERVER_SIGNING_KEY_B64:-}
+      PROOFLINE_ALLOW_EPHEMERAL_SIGNING_KEY: ${PROOFLINE_ALLOW_EPHEMERAL_SIGNING_KEY:-true}
+      PROOFLINE_ADMIN_PUBLIC_KEY_SPKI: ${PROOFLINE_ADMIN_PUBLIC_KEY_SPKI:-}
+      PROOFLINE_ANDROID_ATTESTATION_VERIFIER_URL: ${PROOFLINE_ANDROID_ATTESTATION_VERIFIER_URL:-}
+      PROOFLINE_LEDGER_EVENT_URL: ${PROOFLINE_LEDGER_EVENT_URL:-http://host.docker.internal:3000/api/internal/v1/ledger-events}
+      PROOFLINE_TSA_URL: ${PROOFLINE_TSA_URL:-}
+      PROOFLINE_MAX_FRAGMENT_BYTES: ${PROOFLINE_MAX_FRAGMENT_BYTES:-33554432}
+      PROOFLINE_MAX_CAPTURE_BYTES: ${PROOFLINE_MAX_CAPTURE_BYTES:-5368709120}
+      PROOFLINE_MAX_DEVICE_DAILY_BYTES: ${PROOFLINE_MAX_DEVICE_DAILY_BYTES:-10737418240}
+      PROOFLINE_MAX_IP_DAILY_BYTES: ${PROOFLINE_MAX_IP_DAILY_BYTES:-26843545600}
+      PROOFLINE_MAX_DEVICE_CONCURRENT: ${PROOFLINE_MAX_DEVICE_CONCURRENT:-1}
+      PROOFLINE_MAX_IP_CONCURRENT: ${PROOFLINE_MAX_IP_CONCURRENT:-3}
+      PROOFLINE_PUBLIC_WEB_URL: ${PROOFLINE_PUBLIC_WEB_URL:-http://localhost:3000}
+      RUST_LOG: ${RUST_LOG:-proofline=info,tower_http=info}
+    depends_on: { postgres: { condition: service_healthy }, minio-init: { condition: service_completed_successfully } }
+    healthcheck: { test: ["CMD", "curl", "-f", "http://localhost:8080/healthz"], interval: 10s, timeout: 3s, retries: 20 }
+    restart: unless-stopped
+  worker:
+    build: { context: ., dockerfile: services/media/Dockerfile }
+    entrypoint: ["proofline-worker"]
+    environment: *media-env
+    depends_on: { gateway: { condition: service_healthy } }
+    restart: unless-stopped
+  caddy:
+    image: caddy:2.10.0-alpine@sha256:ae4458638da8e1a91aafffb231c5f8778e964bca650c8a8cb23a7e8ac557aa3c
+    ports: ["8080:80"]
+    volumes: ["./Caddyfile:/etc/caddy/Caddyfile:ro"]
+    depends_on: { gateway: { condition: service_healthy } }
+    restart: unless-stopped
+volumes:
+  postgres-data:
+  media-data:

@@ -1,0 +1,7 @@
+services:
+  gateway:
+    environment:
+      PROOFLINE_ADMIN_PUBLIC_KEY_SPKI: MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE4uiSqkVTUb-CTrNad-r4ToheRCLgWz2aLwWllH5eIdb0mOrPNYlitq4KEc7-dZIek7PGLBZKYK2_o8eXGy4bWQ
+  worker:
+    environment:
+      PROOFLINE_ADMIN_PUBLIC_KEY_SPKI: MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE4uiSqkVTUb-CTrNad-r4ToheRCLgWz2aLwWllH5eIdb0mOrPNYlitq4KEc7-dZIek7PGLBZKYK2_o8eXGy4bWQ

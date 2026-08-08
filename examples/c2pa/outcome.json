@@ -1,0 +1,10 @@
+{
+  "generated_at": "2026-08-08T02:23:11.1139214Z",
+  "c2patool_version": "c2patool 0.26.60",
+  "fixture": "synthetic 640x360 AVC plus AAC CMAF, six seconds",
+  "live_video_binding": "valid_with_untrusted_development_signing_credential",
+  "live_audio_binding": "valid_with_untrusted_development_signing_credential",
+  "production_trust": "not_configured",
+  "validation_policy": "Asset bindings validated with trust checking disabled; a separate strict run must and does report signingCredential.untrusted.",
+  "note": "The official author and validator are the same pinned executable in this spike. CI should also validate with a separately installed official SDK before production trust is claimed."
+}

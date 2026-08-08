@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "verify": {
+    "verify_trust": false,
+    "verify_timestamp_trust": false
+  }
+}

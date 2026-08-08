@@ -1,0 +1,5 @@
+{
+  "warning": "TEST FIXTURE ONLY. Never configure this key for a public deployment.",
+  "private_key_pkcs8_b64url": "MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgCs7OyXFuzANkebE06Y9cQ_HEeimtimKM1wLpsFjL0OGhRANCAATi6JKqRVNRv4JOs1p36vhOiF5EIuBbPZovBaWUfl4h1vSY6s81iWK2rgoRzv51kh6Ts8YsFkpgrb-jx5cbLhtZ",
+  "public_key_spki_b64url": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE4uiSqkVTUb-CTrNad-r4ToheRCLgWz2aLwWllH5eIdb0mOrPNYlitq4KEc7-dZIek7PGLBZKYK2_o8eXGy4bWQ"
+}

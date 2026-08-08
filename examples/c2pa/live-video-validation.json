@@ -1,0 +1,190 @@
+Verifying manifest: "init-0.mp4"
+{
+  "active_manifest": "urn:c2pa:8e8db566-64d7-40da-a510-01078b7009a9",
+  "manifests": {
+    "urn:c2pa:8e8db566-64d7-40da-a510-01078b7009a9": {
+      "claim_generator_info": [
+        {
+          "name": "ProofLine C2PA compatibility spike",
+          "version": "2.0.0",
+          "org.contentauth.c2pa_rs": "0.85.0"
+        }
+      ],
+      "title": "ProofLine synthetic CMAF compatibility fixture",
+      "instance_id": "xmp:iid:fa8fdd4f-9b5b-4113-af6b-684986c7736b",
+      "assertions": [
+        {
+          "label": "c2pa.hash.bmff.v3",
+          "data": {
+            "exclusions": [
+              {
+                "xpath": "/uuid",
+                "length": null,
+                "data": [
+                  {
+                    "offset": 8,
+                    "value": "2P7D1hsOSDySl1goh37EgQ=="
+                  }
+                ],
+                "subset": null,
+                "version": null,
+                "flags": null,
+                "exact": null
+              },
+              {
+                "xpath": "/ftyp",
+                "length": null,
+                "data": null,
+                "subset": null,
+                "version": null,
+                "flags": null,
+                "exact": null
+              },
+              {
+                "xpath": "/mfra",
+                "length": null,
+                "data": null,
+                "subset": null,
+                "version": null,
+                "flags": null,
+                "exact": null
+              },
+              {
+                "xpath": "/free",
+                "length": null,
+                "data": null,
+                "subset": null,
+                "version": null,
+                "flags": null,
+                "exact": null
+              },
+              {
+                "xpath": "/skip",
+                "length": null,
+                "data": null,
+                "subset": null,
+                "version": null,
+                "flags": null,
+                "exact": null
+              }
+            ],
+            "alg": "sha256",
+            "merkle": [
+              {
+                "uniqueId": 1,
+                "localId": 1,
+                "count": 3,
+                "alg": "sha256",
+                "initHash": "yzJQvagmfjLpRC+mQ5n+mKQQxyPZ4QVE51lf/4CMdww=",
+                "hashes": [
+                  [
+                    230,
+                    146,
+                    8,
+                    127,
+                    146,
+                    232,
+                    64,
+                    17,
+                    84,
+                    36,
+                    185,
+                    186,
+                    102,
+                    162,
+                    232,
+                    142,
+                    233,
+                    92,
+                    74,
+                    217,
+                    64,
+                    235,
+                    187,
+                    223,
+                    74,
+                    76,
+                    142,
+                    98,
+                    73,
+                    158,
+                    32,
+                    34
+                  ]
+                ]
+              }
+            ],
+            "name": "jumbf manifest"
+          },
+          "created": true
+        },
+        {
+          "label": "c2pa.actions.v2",
+          "data": {
+            "actions": [
+              {
+                "action": "c2pa.created",
+                "digitalSourceType": "http://cv.iptc.org/newscodes/digitalsourcetype/softwareImage"
+              }
+            ]
+          }
+        },
+        {
+          "label": "org.proofline.compatibility",
+          "data": {
+            "fixture": true,
+            "purpose": "C2PA fragmented BMFF authoring and independent official-validator check",
+            "warning": "Synthetic test fixture signed with an untrusted development certificate"
+          }
+        }
+      ],
+      "signature_info": {
+        "alg": "Es256",
+        "issuer": "C2PA Test Signing Cert",
+        "common_name": "C2PA Signer",
+        "cert_serial_number": "640229841392226413189608867977836244731148734950"
+      },
+      "label": "urn:c2pa:8e8db566-64d7-40da-a510-01078b7009a9",
+      "claim_version": 2
+    }
+  },
+  "validation_results": {
+    "activeManifest": {
+      "success": [
+        {
+          "code": "claimSignature.insideValidity",
+          "url": "self#jumbf=/c2pa/urn:c2pa:8e8db566-64d7-40da-a510-01078b7009a9/c2pa.signature",
+          "explanation": "claim signature valid"
+        },
+        {
+          "code": "claimSignature.validated",
+          "url": "self#jumbf=/c2pa/urn:c2pa:8e8db566-64d7-40da-a510-01078b7009a9/c2pa.signature",
+          "explanation": "claim signature valid"
+        },
+        {
+          "code": "assertion.hashedURI.match",
+          "url": "self#jumbf=/c2pa/urn:c2pa:8e8db566-64d7-40da-a510-01078b7009a9/c2pa.assertions/c2pa.hash.bmff.v3",
+          "explanation": "hashed uri matched: self#jumbf=c2pa.assertions/c2pa.hash.bmff.v3"
+        },
+        {
+          "code": "assertion.hashedURI.match",
+          "url": "self#jumbf=/c2pa/urn:c2pa:8e8db566-64d7-40da-a510-01078b7009a9/c2pa.assertions/c2pa.actions.v2",
+          "explanation": "hashed uri matched: self#jumbf=c2pa.assertions/c2pa.actions.v2"
+        },
+        {
+          "code": "assertion.hashedURI.match",
+          "url": "self#jumbf=/c2pa/urn:c2pa:8e8db566-64d7-40da-a510-01078b7009a9/c2pa.assertions/org.proofline.compatibility",
+          "explanation": "hashed uri matched: self#jumbf=c2pa.assertions/org.proofline.compatibility"
+        },
+        {
+          "code": "assertion.bmffHash.match",
+          "url": "self#jumbf=/c2pa/urn:c2pa:8e8db566-64d7-40da-a510-01078b7009a9/c2pa.assertions/c2pa.hash.bmff.v3",
+          "explanation": "BMFF hash valid"
+        }
+      ],
+      "informational": [],
+      "failure": []
+    }
+  },
+  "validation_state": "Valid"
+}
