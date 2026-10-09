@@ -1,5 +1,9 @@
-# ProofLine v2
+# Proofline was a combination web app and sister android application written as a hobby project written after seeing a police body cam video of officers demanding the code to the phone (under threats of arrest) of a citizen who'd recorded them behaving badly. Once they have the code they delete the video... 
+That was the initial spark, to create a direct to cloud video system. Attempting to prove complete originality and authenticity cryptographically lead the project to grow in complexity a lot but served as excellent practice. 
 
+I've since abandoned the project as I feel its excessively complex and a simpler implementation focusing only on direct to cloud recording without all the added complexity is a better development target.
+
+## Proofline v2
 ProofLine is a public, high-assurance video-provenance system designed to preserve evidence while capture is still happening. It sends signed, short media fragments off-device, stores them durably, returns signed receipts, and makes deliberate endings visibly different from interrupted recordings.
 
 It does **not** prove that a depicted event is objectively true, guarantee legal admissibility, or make a compromised phone trustworthy. C2PA and the ProofLine chain bind media to provenance assertions; evidentiary weight still depends on device state, key custody, server custody, independent corroboration, and jurisdiction.
@@ -7,7 +11,6 @@ It does **not** prove that a depicted event is objectively true, guarantee legal
 ## Documentation
 
 The standalone GitHub Pages documentation includes:
-
 - A researched explanation of the problem with cited DOJ, court and civil-settlement examples.
 - Complete architecture, evidence-protocol, security, operations and validation guides.
 - A responsive interactive “ProofLine v2 · project overview” covering methodology, evidence and readiness.
